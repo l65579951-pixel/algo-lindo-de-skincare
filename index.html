@@ -1,714 +1,517 @@
-import React, { useState } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Calendar, AlertCircle, Heart, Droplets } from 'lucide-react';
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Skin Intelligence — Mini (con modales)</title>
+<style>
+  :root{--accent:#8f2d48;--muted:#6f6668;--card:#fff;--bg:#fbf7f6}
+  *{box-sizing:border-box}
+  body{font-family:Inter,system-ui,Arial;margin:18px;background:var(--bg);color:#222}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{margin:0 0 8px;font-size:18px}
+  .small{font-size:13px;color:var(--muted)}
+  .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:12px}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  input[type=range]{width:100%}
+  input,button,select,textarea{font-size:14px;padding:8px;border-radius:8px;border:1px solid #eee}
+  button{background:var(--accent);color:#fff;border:none;cursor:pointer}
+  .row{display:flex;gap:10px;align-items:center}
+  .timeline{display:flex;gap:6px;overflow:auto;padding:8px 0}
+  .day{min-width:86px;padding:8px;border-radius:8px;text-align:center;border:1px solid transparent}
+  .dot{width:10px;height:10px;border-radius:50%;margin:6px auto}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  canvas{width:100%;height:48px;border-radius:6px}
+  /* modal */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:40}
+  .modal{background:#fff;padding:16px;border-radius:10px;max-width:420px;width:92%;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+  .modal h3{margin:0 0 8px}
+  .modal p{margin:8px 0;color:var(--muted)}
+  .modal .row{justify-content:flex-end;margin-top:12px}
+  .btn-ghost{background:#fff;color:var(--accent);border:1px solid #f0e0e3}
+  /* toast */
+  .toast-wrap{position:fixed;right:18px;bottom:18px;z-index:50;display:flex;flex-direction:column;gap:8px}
+  .toast{background:#111;color:#fff;padding:8px 12px;border-radius:8px;opacity:0.98}
+  /* disabled overlay for terms */
+  .overlay-disabled{position:fixed;inset:0;background:rgba(255,255,255,0.85);display:none;align-items:center;justify-content:center;z-index:30}
+  .muted{color:var(--muted)}
+  .tiny{font-size:12px;color:var(--muted)}
+  .trash{background:#f8eef0;color:#b21f3a;border-radius:6px;padding:6px 8px;border:none;cursor:pointer}
+  .settings{display:flex;gap:8px;align-items:center;justify-content:space-between}
+</style>
+</head>
+<body>
+<div class="wrap">
 
-// Types
-interface SkinEntry {
-  date: string;
-  generalState: number;
-  hydration: number;
-  sebumProduction: number;
-  sensitivity: number;
-  breakouts: boolean;
-  luminosity: number;
-  irritation: number;
-  texture: number;
-  eyeContour: number;
-  lips: number;
-  mood?: string;
-  sleepHours?: number;
-  waterIntake?: number;
-  temperature?: number;
-  sunscreen?: boolean;
-}
+  <h1>Skin Intelligence — Mini</h1>
+  <div class="small">Ahora con confirmaciones y permisos integrados en el widget (ventanas emergentes).</div>
 
-interface Product {
-  id: string;
-  name: string;
-  usageDays: number;
-  compatibility: number;
-  results: string[];
-  rating: number;
-  status: 'active' | 'inactive';
-}
-
-interface Correlation {
-  factor1: string;
-  factor2: string;
-  correlation: number;
-  description: string;
-}
-
-// Color Palette
-const COLORS = {
-  primary: '#8B4C6E', // Burgundy
-  secondary: '#F5E6DC', // Cream
-  accent: '#D4A5A5', // Dusty Rose
-  positive: '#A8D5BA',
-  negative: '#E8B4B8',
-  neutral: '#C4B5A0',
-};
-
-const colorScale = (value: number) => {
-  if (value >= 80) return COLORS.positive;
-  if (value >= 60) return COLORS.accent;
-  if (value >= 40) return COLORS.neutral;
-  return COLORS.negative;
-};
-
-// Skin Status Timeline Component
-export const SkinStatusTimeline: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        🩷 Skin Status Timeline
-      </h2>
-      
-      <div className="space-y-4 max-h-96 overflow-y-auto">
-        {entries.slice().reverse().map((entry, idx) => (
-          <div key={idx} className="flex gap-4 pb-4 border-b border-gray-100 last:border-b-0">
-            <div className="w-20 text-sm font-semibold text-gray-600">{entry.date}</div>
-            
-            <div className="flex-1 grid grid-cols-5 gap-3">
-              {[
-                { label: 'General', value: entry.generalState },
-                { label: 'Hydration', value: entry.hydration },
-                { label: 'Sebum', value: entry.sebumProduction },
-                { label: 'Sensitivity', value: entry.sensitivity },
-                { label: 'Luminosity', value: entry.luminosity },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col items-center gap-1">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                    style={{ backgroundColor: colorScale(item.value) }}
-                  >
-                    {Math.round(item.value / 10)}
-                  </div>
-                  <span className="text-xs text-gray-500">{item.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {entry.breakouts && (
-              <div className="flex items-center gap-1 text-red-500 text-xs font-semibold">
-                <AlertCircle size={16} />
-                Breakouts
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Pattern Detection Component
-export const PatternDetection: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
-  const patterns = generatePatterns(entries);
-
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        🧪 Pattern Detection
-      </h2>
-
-      <div className="space-y-4">
-        {patterns.map((pattern, idx) => (
-          <div key={idx} className="flex gap-3 p-4 rounded-lg" style={{ backgroundColor: COLORS.secondary }}>
-            <TrendingUp size={20} style={{ color: COLORS.primary }} className="flex-shrink-0 mt-1" />
-            <p className="text-sm text-gray-700">{pattern}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Skin Analytics Component
-export const SkinAnalytics: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
-  const hydrationData = entries.map((entry) => ({
-    date: entry.date,
-    hydration: entry.hydration,
-  }));
-
-  const breakoutFrequency = calculateWeeklyBreakouts(entries);
-
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        📈 Skin Analytics
-      </h2>
-
-      <div className="space-y-8">
-        {/* Hydration Evolution */}
-        <div>
-          <h3 className="text-sm font-semibold mb-4 text-gray-700">Hydration Evolution</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={hydrationData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="date" style={{ fontSize: 12 }} />
-              <YAxis style={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#FFF',
-                  border: `1px solid ${COLORS.accent}`,
-                  borderRadius: '8px',
-                }}
-              />
-              <Line type="monotone" dataKey="hydration" stroke={COLORS.accent} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+  <section class="card" id="mainCard">
+    <form id="form">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <div style="flex:1">
+          <label>Fecha</label>
+          <input id="date" type="date" required>
         </div>
-
-        {/* Breakout Frequency */}
-        <div>
-          <h3 className="text-sm font-semibold mb-4 text-gray-700">Breakout Frequency by Week</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={breakoutFrequency}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="week" style={{ fontSize: 12 }} />
-              <YAxis style={{ fontSize: 12 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#FFF',
-                  border: `1px solid ${COLORS.negative}`,
-                  borderRadius: '8px',
-                }}
-              />
-              <Bar dataKey="count" fill={COLORS.negative} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div style="width:120px">
+          <label>Horas de sueño</label>
+          <input id="sleep" type="number" min="0" max="24" value="7">
         </div>
       </div>
-    </div>
-  );
-};
 
-// Product Intelligence Component
-export const ProductIntelligence: React.FC<{ products: Product[] }> = ({ products }) => {
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        🧴 Product Intelligence
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {products.map((product) => (
-          <div key={product.id} className="p-4 rounded-lg border border-gray-100 hover:shadow-md transition">
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="font-semibold text-gray-900">{product.name}</h3>
-              <div className="text-xs font-bold px-2 py-1 rounded" style={{ backgroundColor: COLORS.secondary, color: COLORS.primary }}>
-                {product.usageDays}d
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Compatibility</span>
-                  <span className="font-semibold">{product.compatibility}%</span>
-                </div>
-                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full transition"
-                    style={{
-                      width: `${product.compatibility}%`,
-                      backgroundColor: colorScale(product.compatibility),
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Results Observed</p>
-                <ul className="space-y-1">
-                  {product.results.map((result, idx) => (
-                    <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
-                      <span style={{ color: COLORS.positive }}>✔</span>
-                      {result}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} style={{ color: i < product.rating ? '#FFD700' : '#E5E7EB' }}>
-                    ★
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Skin Correlation Engine Component
-export const SkinCorrelationEngine: React.FC<{ correlations: Correlation[] }> = ({ correlations }) => {
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        🧬 Skin Correlation Engine
-      </h2>
-
-      <div className="space-y-4">
-        {correlations.map((corr, idx) => (
-          <div key={idx} className="p-4 rounded-lg border border-gray-100">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-sm font-semibold text-gray-700">{corr.factor1}</span>
-              <span style={{ color: COLORS.accent }}>↔</span>
-              <span className="text-sm font-semibold text-gray-700">{corr.factor2}</span>
-              <div className="ml-auto">
-                <div className="text-xs font-bold px-2 py-1 rounded" style={{ backgroundColor: COLORS.secondary }}>
-                  {Math.round(corr.correlation * 100)}%
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 italic">{corr.description}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// Evolution Gallery Component
-export const EvolutionGallery: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
-  const [startDate, setStartDate] = useState(entries[0]?.date || '');
-  const [endDate, setEndDate] = useState(entries[entries.length - 1]?.date || '');
-
-  const startEntry = entries.find((e) => e.date === startDate);
-  const endEntry = entries.find((e) => e.date === endDate);
-
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        📷 Evolution Gallery
-      </h2>
-
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
-          <label className="block text-sm font-semibold mb-2">Start Date</label>
-          <select
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-          >
-            {entries.map((e) => (
-              <option key={e.date} value={e.date}>
-                {e.date}
-              </option>
-            ))}
-          </select>
+          <label>Hidratación <span id="hidVal" class="small">60</span></label>
+          <input id="hydration" type="range" min="0" max="100" value="60">
         </div>
         <div>
-          <label className="block text-sm font-semibold mb-2">End Date</label>
-          <select
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-          >
-            {entries.map((e) => (
-              <option key={e.date} value={e.date}>
-                {e.date}
-              </option>
-            ))}
-          </select>
+          <label>Oleosidad <span id="sebumVal" class="small">40</span></label>
+          <input id="sebum" type="range" min="0" max="100" value="40">
         </div>
       </div>
 
-      {startEntry && endEntry && (
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold mb-4 text-gray-900">{startEntry.date}</h3>
-            <ComparisonCard entry={startEntry} />
-          </div>
-          <div>
-            <h3 className="font-semibold mb-4 text-gray-900">{endEntry.date}</h3>
-            <ComparisonCard entry={endEntry} />
-          </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <div>
+          <label>Sensibilidad <span id="sensVal" class="small">20</span></label>
+          <input id="sensitivity" type="range" min="0" max="100" value="20">
         </div>
-      )}
-    </div>
-  );
-};
-
-// Comparison Card for Evolution Gallery
-const ComparisonCard: React.FC<{ entry: SkinEntry }> = ({ entry }) => {
-  return (
-    <div className="space-y-3 p-4 rounded-lg border border-gray-100">
-      {[
-        { label: 'General State', value: entry.generalState },
-        { label: 'Hydration', value: entry.hydration },
-        { label: 'Sensitivity', value: entry.sensitivity },
-        { label: 'Luminosity', value: entry.luminosity },
-        { label: 'Texture', value: entry.texture },
-      ].map((item) => (
-        <div key={item.label}>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-700">{item.label}</span>
-            <span className="font-semibold">{item.value}%</span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full transition"
-              style={{
-                width: `${item.value}%`,
-                backgroundColor: colorScale(item.value),
-              }}
-            />
-          </div>
+        <div>
+          <label style="display:block"><input id="breakout" type="checkbox"> Brotes hoy</label>
         </div>
-      ))}
+      </div>
+
+      <div style="margin-top:8px">
+        <label>Productos usados (separar por coma)</label>
+        <input id="products" type="text" placeholder="e.g. Glow Serum, Ceramidas">
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="saveBtn">Guardar</button>
+        <button id="export" type="button" class="btn-ghost">Exportar CSV</button>
+        <button id="reportBtn" type="button" class="btn-ghost">Generar resumen</button>
+        <button id="settingsBtn" type="button" class="btn-ghost">Ajustes</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>Línea de tiempo (últimos 30 días)</strong>
+      <div class="tiny">Haz click en la tarjeta para ver o eliminar</div>
     </div>
-  );
-};
+    <div class="timeline" id="timeline"></div>
+  </section>
 
-// Skin Report Component
-export const SkinReport: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
-  const stats = calculateMonthlyStats(entries);
-
-  return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
-        🩺 Skin Report
-      </h2>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Hydration" value={`↑ ${stats.hydrationChange}%`} positive={stats.hydrationChange > 0} />
-        <StatCard label="Breakouts" value={`↓ ${Math.abs(stats.breakoutChange)}%`} positive={stats.breakoutChange < 0} />
-        <StatCard label="Sensitivity" value={`↓ ${Math.abs(stats.sensitivityChange)}%`} positive={stats.sensitivityChange < 0} />
-        <StatCard label="Consistency" value={`${stats.consistency}%`} positive={stats.consistency > 80} />
-      </div>
-
-      {/* Positive Factors */}
-      <div className="mb-8">
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <span style={{ color: COLORS.positive }}>✔</span>
-          Positive Factors
-        </h3>
-        <ul className="space-y-2">
-          {stats.positiveFactors.map((factor, idx) => (
-            <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
-              <span style={{ color: COLORS.positive }}>•</span>
-              {factor}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Areas to Improve */}
-      <div className="mb-8">
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <AlertCircle size={18} style={{ color: COLORS.negative }} />
-          Areas to Improve
-        </h3>
-        <ul className="space-y-2">
-          {stats.improvementAreas.map((area, idx) => (
-            <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
-              <span style={{ color: COLORS.negative }}>•</span>
-              {area}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Recommendation */}
-      <div className="p-4 rounded-lg" style={{ backgroundColor: COLORS.secondary }}>
-        <h3 className="font-semibold mb-2" style={{ color: COLORS.primary }}>
-          🎯 Intelligent Recommendation
-        </h3>
-        <p className="text-sm text-gray-700 leading-relaxed">{stats.recommendation}</p>
-      </div>
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>Hidratación — mini gráfico</strong>
+      <div class="small" id="selectedInfo">—</div>
     </div>
-  );
-};
+    <canvas id="spark"></canvas>
+  </section>
 
-// Stat Card Component
-const StatCard: React.FC<{ label: string; value: string; positive: boolean }> = ({ label, value, positive }) => {
-  return (
-    <div className="p-4 rounded-lg border border-gray-100 text-center">
-      <p className="text-xs text-gray-600 mb-2">{label}</p>
-      <p className="text-lg font-bold flex items-center justify-center gap-1" style={{ color: positive ? COLORS.positive : COLORS.negative }}>
-        {positive && <TrendingUp size={18} />}
-        {!positive && <TrendingDown size={18} />}
-        {value}
-      </p>
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>Sugerencias automáticas</strong>
+      <button id="clearAllBtn" class="trash tiny">Borrar todo</button>
     </div>
-  );
-};
+    <div id="patterns" style="margin-top:8px" class="muted">—</div>
+  </section>
+</div>
 
-// Helper Functions
-function generatePatterns(entries: SkinEntry[]): string[] {
-  const patterns: string[] = [];
+<!-- Modal backdrop -->
+<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-hidden="true">
+  <div class="modal" id="modalContent">
+    <!-- dynamic content -->
+  </div>
+</div>
 
-  // Pattern: Exfoliants and breakouts
-  const exfoliantBreakouts = entries.filter((e) => e.breakouts).length > entries.length * 0.3;
-  if (exfoliantBreakouts) {
-    patterns.push(
-      'During the last three weeks, breakouts appeared mainly 2-4 days after using chemical exfoliants.'
-    );
-  }
+<!-- Disabled overlay (accept terms) -->
+<div class="overlay-disabled" id="overlay">
+  <div class="modal">
+    <h3>Bienvenida a Skin Intelligence</h3>
+    <p class="muted">Antes de usar, aceptá que los datos se guardarán localmente en tu navegador. No se envía nada fuera de tu dispositivo.</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button id="acceptBtn">Aceptar y continuar</button>
+    </div>
+  </div>
+</div>
 
-  // Pattern: Sleep and hydration
-  const avgSleep = entries.reduce((sum, e) => sum + (e.sleepHours || 0), 0) / entries.length;
-  if (avgSleep > 7) {
-    patterns.push('Your skin shows better hydration levels when you sleep more than 7 hours per night.');
-  }
+<!-- Toasts -->
+<div class="toast-wrap" id="toastWrap"></div>
 
-  // Pattern: Temperature sensitivity
-  const highTempDays = entries.filter((e) => (e.temperature || 0) > 30);
-  if (highTempDays.length > 0) {
-    const avgSensitivity = highTempDays.reduce((sum, e) => sum + e.sensitivity, 0) / highTempDays.length;
-    patterns.push(`Sensitivity levels increase on days with temperatures above 30°C (average: ${Math.round(avgSensitivity)}%).`);
-  }
+<script>
+/* ===========================
+   Almacenamiento simple
+   =========================== */
+const KEY = 'si_mini_entries_v2';
+const ACCEPT_KEY = 'si_mini_accepted_v2';
+const SETTINGS_KEY = 'si_mini_settings_v2';
 
-  // Pattern: Water intake
-  const goodHydrationDays = entries.filter((e) => (e.waterIntake || 0) > 2);
-  if (goodHydrationDays.length > entries.length * 0.5) {
-    patterns.push('Increased water intake correlates with improved skin hydration.');
-  }
+function loadEntries(){ try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch(e){ return [] } }
+function saveEntries(list){ localStorage.setItem(KEY, JSON.stringify(list)) }
+function loadAccepted(){ return localStorage.getItem(ACCEPT_KEY) === '1' }
+function setAccepted(){ localStorage.setItem(ACCEPT_KEY, '1') }
+function loadSettings(){ try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') } catch(e){ return {} } }
+function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) }
 
-  return patterns.length > 0 ? patterns : ['No significant patterns detected yet. Keep tracking!'];
-}
+/* ===========================
+   Elementos & utilidades
+   =========================== */
+const dateInput = document.getElementById('date');
+const hydration = document.getElementById('hydration');
+const sebum = document.getElementById('sebum');
+const sensitivity = document.getElementById('sensitivity');
+const hidVal = document.getElementById('hidVal');
+const sebumVal = document.getElementById('sebumVal');
+const sensVal = document.getElementById('sensVal');
+const timelineEl = document.getElementById('timeline');
+const selectedInfo = document.getElementById('selectedInfo');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalContent = document.getElementById('modalContent');
+const overlay = document.getElementById('overlay');
+const toastWrap = document.getElementById('toastWrap');
+const settingsBtn = document.getElementById('settingsBtn');
 
-function calculateWeeklyBreakouts(entries: SkinEntry[]): Array<{ week: string; count: number }> {
-  const weeks: { [key: string]: number } = {};
+function todayISO(){ return new Date().toISOString().slice(0,10) }
+dateInput.value = todayISO();
 
-  entries.forEach((entry) => {
-    const date = new Date(entry.date);
-    const week = `W${Math.ceil(date.getDate() / 7)}`;
-    weeks[week] = (weeks[week] || 0) + (entry.breakouts ? 1 : 0);
-  });
+hydration.oninput = ()=> hidVal.textContent = hydration.value;
+sebum.oninput = ()=> sebumVal.textContent = sebum.value;
+sensitivity.oninput = ()=> sensVal.textContent = sensitivity.value;
 
-  return Object.entries(weeks).map(([week, count]) => ({ week, count }));
-}
-
-function calculateMonthlyStats(entries: SkinEntry[]) {
-  const firstHalf = entries.slice(0, Math.floor(entries.length / 2));
-  const secondHalf = entries.slice(Math.floor(entries.length / 2));
-
-  const avgHydrationFirst = firstHalf.reduce((sum, e) => sum + e.hydration, 0) / firstHalf.length;
-  const avgHydrationSecond = secondHalf.reduce((sum, e) => sum + e.hydration, 0) / secondHalf.length;
-  const hydrationChange = Math.round(((avgHydrationSecond - avgHydrationFirst) / avgHydrationFirst) * 100);
-
-  const breakoutsFirst = firstHalf.filter((e) => e.breakouts).length;
-  const breakoutsSecond = secondHalf.filter((e) => e.breakouts).length;
-  const breakoutChange = Math.round(((breakoutsSecond - breakoutsFirst) / (breakoutsFirst || 1)) * 100);
-
-  const avgSensitivityFirst = firstHalf.reduce((sum, e) => sum + e.sensitivity, 0) / firstHalf.length;
-  const avgSensitivitySecond = secondHalf.reduce((sum, e) => sum + e.sensitivity, 0) / secondHalf.length;
-  const sensitivityChange = Math.round(((avgSensitivitySecond - avgSensitivityFirst) / avgSensitivityFirst) * 100);
-
-  const consistency = Math.round((entries.filter((e) => e.generalState > 60).length / entries.length) * 100);
-
-  return {
-    hydrationChange,
-    breakoutChange,
-    sensitivityChange,
-    consistency,
-    positiveFactors: [
-      'Better sleep quality observed',
-      'Increased water consumption',
-      'No significant irritations',
-      'Consistent routine adherence',
-    ],
-    improvementAreas: [
-      'Sunscreen omitted 4 days',
-      'Night routine incomplete 6 times',
-      'Low hydration during week 3',
-    ],
-    recommendation:
-      'Priority: strengthen skin barrier hydration. Although breakout frequency decreased this month, your skin showed dehydration signs in 40% of records. Maintain a gentle routine, prioritize repair actives, and avoid introducing new products until skin stabilizes.',
+/* ========= Modal system ========= */
+function showModal({title='', html='', confirmText='OK', cancelText='Cancelar', onConfirm=null, onCancel=null, showCancel=true}) {
+  modalContent.innerHTML = `
+    <h3>${title}</h3>
+    <div>${html}</div>
+    <div class="row">
+      ${showCancel?`<button id="modalCancel" class="btn-ghost">${cancelText}</button>`:''}
+      <button id="modalConfirm">${confirmText}</button>
+    </div>`;
+  modalBackdrop.style.display = 'flex';
+  modalBackdrop.setAttribute('aria-hidden','false');
+  document.getElementById('modalConfirm').onclick = ()=>{
+    modalBackdrop.style.display = 'none';
+    modalBackdrop.setAttribute('aria-hidden','true');
+    onConfirm && onConfirm();
   };
+  const cancelBtn = document.getElementById('modalCancel');
+  if(cancelBtn){
+    cancelBtn.onclick = ()=>{
+      modalBackdrop.style.display = 'none';
+      modalBackdrop.setAttribute('aria-hidden','true');
+      onCancel && onCancel();
+    };
+  }
+}
+function hideModal(){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); }
+
+/* ========= Toasts ========= */
+function toast(text, ms=3000){
+  const t = document.createElement('div'); t.className='toast'; t.textContent = text;
+  toastWrap.appendChild(t);
+  setTimeout(()=> t.style.opacity='0.01', ms-300);
+  setTimeout(()=> t.remove(), ms);
 }
 
-// Main Container Component
-export const SkinIntelligenceDashboard: React.FC = () => {
-  const [entries] = useState<SkinEntry[]>([
-    {
-      date: '2024-01-15',
-      generalState: 75,
-      hydration: 70,
-      sebumProduction: 45,
-      sensitivity: 50,
-      breakouts: false,
-      luminosity: 80,
-      irritation: 30,
-      texture: 65,
-      eyeContour: 75,
-      lips: 70,
-      mood: 'good',
-      sleepHours: 8,
-      waterIntake: 2.5,
-      temperature: 22,
-      sunscreen: true,
-    },
-    {
-      date: '2024-01-16',
-      generalState: 72,
-      hydration: 68,
-      sebumProduction: 50,
-      sensitivity: 55,
-      breakouts: false,
-      luminosity: 78,
-      irritation: 35,
-      texture: 62,
-      eyeContour: 72,
-      lips: 68,
-      mood: 'neutral',
-      sleepHours: 7,
-      waterIntake: 2,
-      temperature: 24,
-      sunscreen: true,
-    },
-    {
-      date: '2024-01-17',
-      generalState: 68,
-      hydration: 65,
-      sebumProduction: 55,
-      sensitivity: 65,
-      breakouts: true,
-      luminosity: 72,
-      irritation: 45,
-      texture: 55,
-      eyeContour: 65,
-      lips: 62,
-      mood: 'stressed',
-      sleepHours: 5,
-      waterIntake: 1.5,
-      temperature: 28,
-      sunscreen: false,
-    },
-    {
-      date: '2024-01-18',
-      generalState: 80,
-      hydration: 80,
-      sebumProduction: 40,
-      sensitivity: 40,
-      breakouts: false,
-      luminosity: 85,
-      irritation: 25,
-      texture: 75,
-      eyeContour: 80,
-      lips: 78,
-      mood: 'excellent',
-      sleepHours: 9,
-      waterIntake: 3,
-      temperature: 20,
-      sunscreen: true,
-    },
-  ]);
+/* ========= Data operations ========= */
+function saveEntry(entry){
+  const entries = loadEntries();
+  const idx = entries.findIndex(e=>e.date===entry.date);
+  if(idx>=0) entries[idx]=entry; else entries.push(entry);
+  entries.sort((a,b)=> a.date < b.date ? -1 : 1);
+  saveEntries(entries);
+}
 
-  const [products] = useState<Product[]>([
-    {
-      id: '1',
-      name: 'Beauty of Joseon Glow Serum',
-      usageDays: 68,
-      compatibility: 96,
-      results: ['Greater luminosity', 'Texture reduction', 'No irritation'],
-      rating: 5,
-      status: 'active',
-    },
-    {
-      id: '2',
-      name: 'Ceramide Rich Cream',
-      usageDays: 45,
-      compatibility: 92,
-      results: ['Improved hydration', 'Barrier strengthening', 'Reduced sensitivity'],
-      rating: 5,
-      status: 'active',
-    },
-    {
-      id: '3',
-      name: 'Gentle Cleanser',
-      usageDays: 90,
-      compatibility: 88,
-      results: ['Effective cleansing', 'No dryness', 'Balanced pH'],
-      rating: 4,
-      status: 'active',
-    },
-    {
-      id: '4',
-      name: 'Niacinamide Essence',
-      usageDays: 30,
-      compatibility: 85,
-      results: ['Pore minimization', 'Sebum control', 'Improved texture'],
-      rating: 4,
-      status: 'active',
-    },
-  ]);
+function deleteEntry(date){
+  const entries = loadEntries().filter(e=>e.date !== date);
+  saveEntries(entries);
+  toast('Entrada eliminada');
+  renderAll();
+}
 
-  const [correlations] = useState<Correlation[]>([
-    {
-      factor1: 'Water intake',
-      factor2: 'Hydration',
-      correlation: 0.87,
-      description:
-        'High correlation between daily water consumption and skin hydration levels. Optimal intake: 2.5L+',
-    },
-    {
-      factor1: 'Sleep hours',
-      factor2: 'Breakouts',
-      correlation: -0.72,
-      description:
-        'Strong inverse correlation. Less than 6 hours of sleep increases breakout probability by 42%.',
-    },
-    {
-      factor1: 'Stress/Mood',
-      factor2: 'Irritation',
-      correlation: 0.65,
-      description:
-        'Moderate correlation between stress levels and facial irritation. Meditation helps reduce both.',
-    },
-    {
-      factor1: 'Temperature',
-      factor2: 'Oleosiness',
-      correlation: 0.78,
-      description: 'Higher temperatures increase sebum production. Critical threshold: 28°C.',
-    },
-  ]);
+function clearAll(){
+  saveEntries([]);
+  toast('Todos los datos borrados');
+  renderAll();
+}
 
-  return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: '#FAFAF8' }}>
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.primary }}>
-            🧬 Skin Intelligence™
-          </h1>
-          <p className="text-gray-600 italic">
-            Tu piel cambia todos los días. Este widget se encarga de recordar el porqué.
-          </p>
-        </div>
+/* ========= Events: save / export / report / settings / clear ========= */
+document.getElementById('form').addEventListener('submit', e=>{
+  e.preventDefault();
+  if(!loadAccepted()){
+    showModal({
+      title: 'Aceptar antes de guardar',
+      html: '<p class="muted">Tenés que aceptar que los datos se guardarán localmente. ¿Querés aceptar ahora?</p>',
+      confirmText:'Aceptar',
+      cancelText:'No',
+      onConfirm: ()=> { setAccepted(); overlay.style.display='none'; proceedSave(); toast('Datos guardados localmente'); },
+      onCancel: ()=> toast('No guardado')
+    });
+  } else {
+    proceedSave();
+    toast('Guardado');
+  }
+});
 
-        {/* Timeline */}
-        <SkinStatusTimeline entries={entries} />
+function proceedSave(){
+  const entry = {
+    date: dateInput.value,
+    hydration: +hydration.value,
+    sebum: +sebum.value,
+    sensitivity: +sensitivity.value,
+    breakout: document.getElementById('breakout').checked ? 1 : 0,
+    sleep: +document.getElementById('sleep').value || 0,
+    products: (document.getElementById('products').value || '').split(',').map(s=>s.trim()).filter(Boolean),
+    savedAt: new Date().toISOString()
+  };
+  saveEntry(entry);
+  renderAll();
+}
 
-        {/* Patterns */}
-        <PatternDetection entries={entries} />
-
-        {/* Analytics */}
-        <SkinAnalytics entries={entries} />
-
-        {/* Products */}
-        <ProductIntelligence products={products} />
-
-        {/* Correlations */}
-        <SkinCorrelationEngine correlations={correlations} />
-
-        {/* Evolution */}
-        <EvolutionGallery entries={entries} />
-
-        {/* Report */}
-        <SkinReport entries={entries} />
-      </div>
-    </div>
-  );
+/* Export CSV */
+document.getElementById('export').onclick = ()=>{
+  const entries = loadEntries();
+  if(entries.length===0){ toast('No hay datos para exportar'); return; }
+  const header = ['date','hydration','sebum','sensitivity','breakout','sleep','products','savedAt'];
+  const csv = [header.join(',')].concat(entries.map(e=>[
+    e.date,e.hydration,e.sebum,e.sensitivity,e.breakout,e.sleep,
+    `"${(e.products||[]).join(';')}"`,e.savedAt
+  ].join(','))).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='skin-data.csv'; a.click(); URL.revokeObjectURL(url);
+  toast('CSV descargado');
 };
 
-export default SkinIntelligenceDashboard;
+/* Generate summary report */
+document.getElementById('reportBtn').onclick = ()=> {
+  const entries = loadEntries();
+  if(entries.length===0){ toast('Sin datos para generar reporte'); return; }
+  const last30 = entries.slice(-30);
+  const avg = arr => Math.round(arr.reduce((a,b)=>a+b,0)/arr.length || 0);
+  const report = [
+    `Reporte — últimos ${last30.length} días`,
+    `Hidratación media: ${avg(last30.map(e=>e.hydration))}%`,
+    `Brotes totales: ${last30.reduce((s,e)=>s+e.breakout,0)}`,
+    `Promedio sueño: ${avg(last30.map(e=>e.sleep))} h`,
+    `Productos más usados: ${mostUsed(last30).join(', ') || '—'}`,
+    '',
+    'Recomendación:',
+    '- Priorizar hidratación si hidratación media < 55.',
+    '- Revisar si picos de sebo preceden brotes (ver sugerencias automáticas).'
+  ].join('\n');
+  showModal({ title:'Reporte', html:`<pre style="white-space:pre-wrap">${report}</pre>`, confirmText:'OK', showCancel:false });
+};
+
+/* Settings modal */
+settingsBtn.onclick = ()=>{
+  const settings = loadSettings();
+  const html = `
+    <p class="muted">Recordatorio: podes elegir recordatorio en-widget (funciona mientras la página esté abierta) o permitir notificaciones del navegador.</p>
+    <div class="settings">
+      <div class="muted">Recordatorio en-widget</div>
+      <label><input id="inWidgetRem" type="checkbox" ${settings.inWidget ? 'checked':''}></label>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+      <button id="requestBrowserNotif" class="btn-ghost">Permitir notificaciones del navegador</button>
+    </div>
+  `;
+  showModal({
+    title:'Ajustes',
+    html,
+    confirmText:'Guardar',
+    cancelText:'Cancelar',
+    onConfirm: ()=>{
+      const newSettings = { inWidget: !!document.getElementById('inWidgetRem').checked };
+      saveSettings(newSettings);
+      applyReminders();
+      toast('Ajustes guardados');
+    },
+    onCancel: ()=>{}
+  });
+  // bind request button
+  setTimeout(()=>{
+    const btn = document.getElementById('requestBrowserNotif');
+    btn.onclick = async ()=>{
+      if(!("Notification" in window)){ toast('Notificaciones no soportadas en este navegador'); return; }
+      const perm = await Notification.requestPermission();
+      toast('Permiso: ' + perm);
+    };
+  },10);
+};
+
+/* Clear all with confirmation */
+document.getElementById('clearAllBtn').onclick = ()=>{
+  showModal({
+    title: 'Borrar todos los datos',
+    html: '<p class="muted">Esto eliminará TODAS las entradas almacenadas localmente. ¿Estás seguro?</p>',
+    confirmText: 'Borrar todo',
+    cancelText: 'Cancelar',
+    onConfirm: ()=> { clearAll(); },
+    onCancel: ()=> toast('Acción cancelada')
+  });
+};
+
+/* ========= Timeline rendering & delete flow ========= */
+function colorFor(e){
+  if(e.breakout) return '#f28b82';
+  if(e.hydration>70) return '#6ad3b2';
+  if(e.sebum>70) return '#f6c85f';
+  return '#d6c7cb';
+}
+
+function renderTimeline(){
+  const entries = loadEntries();
+  timelineEl.innerHTML = '';
+  const last = entries.slice(-30);
+  last.forEach(e=>{
+    const d = document.createElement('div');
+    d.className = 'day card';
+    d.style.minWidth='110px';
+    d.innerHTML = `
+      <div style="font-size:12px">${e.date}</div>
+      <div class="dot" style="background:${colorFor(e)}"></div>
+      <div class="small">${e.hydration}% • ${e.breakout? '⚠':'OK'}</div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <button class="btn-ghost tiny viewBtn">Ver</button>
+        <button class="trash tiny delBtn">Eliminar</button>
+      </div>
+    `;
+    // view
+    d.querySelector('.viewBtn').onclick = ()=> {
+      showModal({
+        title: `Detalle ${e.date}`,
+        html: `<p class="muted">Hidratación: ${e.hydration}%<br>Oleosidad: ${e.sebum}%<br>Sensibilidad: ${e.sensitivity}%<br>Sueño: ${e.sleep}h<br>Brotes: ${e.breakout? 'Sí':'No'}<br>Productos: ${(e.products||[]).join(', ')}</p>`,
+        confirmText:'Cerrar',
+        showCancel:false
+      });
+    };
+    // delete
+    d.querySelector('.delBtn').onclick = ()=> {
+      showModal({
+        title: 'Eliminar entrada',
+        html: `<p class="muted">Eliminar la entrada del día <strong>${e.date}</strong> es irreversible. ¿Confirmás?</p>`,
+        confirmText:'Eliminar',
+        cancelText:'Cancelar',
+        onConfirm: ()=> { deleteEntry(e.date); },
+        onCancel: ()=> toast('No eliminada')
+      });
+    };
+    timelineEl.appendChild(d);
+  });
+}
+
+/* ========= Sparkline ========= */
+const spark = document.getElementById('spark');
+const Sctx = spark.getContext('2d');
+function renderSpark(){
+  const entries = loadEntries().slice(-30);
+  const w = spark.width = spark.clientWidth;
+  const h = spark.height = 48;
+  Sctx.clearRect(0,0,w,h);
+  if(entries.length===0) return;
+  const vals = entries.map(x=>x.hydration);
+  const max = Math.max(...vals), min = Math.min(...vals);
+  Sctx.beginPath(); Sctx.lineWidth=2; Sctx.strokeStyle='#8f2d48';
+  vals.forEach((v,i)=>{
+    const x = 4 + (i/(vals.length-1||1))*(w-8);
+    const y = 4 + (1 - (v-min)/(max-min||1))*(h-8);
+    if(i===0) Sctx.moveTo(x,y); else Sctx.lineTo(x,y);
+  });
+  Sctx.stroke();
+  // fill
+  Sctx.lineTo(w-4,h-4); Sctx.lineTo(4,h-4); Sctx.closePath();
+  Sctx.fillStyle='rgba(143,45,72,0.08)'; Sctx.fill();
+}
+
+/* ========= Patterns (simple) ========= */
+function analyzePatterns(){
+  const entries = loadEntries();
+  if(entries.length<6) return ['Necesitás al menos 6 entradas para patrones confiables'];
+  let triggers=0, follow=0;
+  for(let i=0;i<entries.length;i++){
+    if(entries[i].sebum>70){
+      triggers++;
+      for(let lag=1;lag<=3;lag++){
+        const next = entries[i+lag];
+        if(next && next.breakout) { follow++; break; }
+      }
+    }
+  }
+  const out = [];
+  if(triggers>=3 && (follow/triggers) > 0.4) out.push('Alta probabilidad de brotes 1-3 días tras picos de oleosidad.');
+  const poorSleep = entries.filter(e=>e.sleep<7);
+  if(poorSleep.length>=4){
+    const lowHyd = poorSleep.filter(e=>e.hydration<50);
+    if(lowHyd.length/poorSleep.length>0.4) out.push('Hidratación tiende a bajar en días con <7h de sueño.');
+  }
+  if(out.length===0) out.push('No se detectaron patrones fuertes con los datos actuales.');
+  return out;
+}
+function renderPatterns(){ document.getElementById('patterns').innerHTML = analyzePatterns().map(p=>`• ${p}`).join('\n'); }
+
+/* ========= Most used products ========= */
+function mostUsed(entries){
+  const map = {};
+  entries.forEach(e=> (e.products||[]).forEach(p=> map[p] = (map[p]||0)+1) );
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,3);
+}
+
+/* ========= Reminders (in-widget) ========= */
+let reminderInterval = null;
+function applyReminders(){
+  const settings = loadSettings();
+  clearInterval(reminderInterval);
+  if(settings.inWidget){
+    // every minute check if today has entry
+    reminderInterval = setInterval(()=>{
+      const entries = loadEntries();
+      const hasToday = entries.some(e => e.date === todayISO());
+      if(!hasToday) toast('Recordatorio: no registraste tu piel hoy');
+    }, 60*1000);
+    toast('Recordatorio en-widget activado (mientras la página esté abierta)');
+  } else {
+    toast('Recordatorio en-widget desactivado');
+  }
+}
+
+/* ========= Initial render & acceptance flow ========= */
+function renderAll(){
+  renderTimeline(); renderSpark(); renderPatterns();
+  const last = loadEntries().slice(-1)[0];
+  if(last) selectedInfo.textContent = `${last.date} • Hid:${last.hydration}% • Brotes:${last.breakout? 'sí':'no'}`;
+  else selectedInfo.textContent = '—';
+}
+
+document.getElementById('acceptBtn').onclick = ()=>{
+  setAccepted();
+  overlay.style.display='none';
+  toast('Gracias — podés usar el widget');
+};
+
+/* If user has not accepted, show overlay */
+if(!loadAccepted()){ overlay.style.display='flex'; } else { overlay.style.display='none'; }
+
+/* Load demo data if empty (optional, to see UI) */
+if(loadEntries().length===0){
+  const demo = [];
+  for(let i=10;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    demo.push({ date: d.toISOString().slice(0,10), hydration: Math.round(55 + Math.random()*20-10), sebum: Math.round(40 + Math.random()*30-10), sensitivity: Math.round(20+Math.random()*20-10), breakout: Math.random()<0.12?1:0, sleep: 6+Math.round(Math.random()*3), products: (Math.random()<0.5?['Glow Serum']:['Rutina base']), savedAt: new Date().toISOString()});
+  }
+  saveEntries(demo);
+}
+
+/* apply settings & render */
+applyReminders();
+renderAll();
+
+/* make sure modals close when clicking backdrop (but not on modal itself) */
+modalBackdrop.addEventListener('click', (ev)=>{
+  if(ev.target === modalBackdrop){ hideModal(); }
+});
+</script>
+</body>
+</html>
