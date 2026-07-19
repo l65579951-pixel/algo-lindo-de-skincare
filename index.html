@@ -3,161 +3,237 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Skin Intelligence — Mini (con modales)</title>
+<title>Skin Intelligence — Nix Edition (Mini Premium)</title>
+
+<!-- Chart.js para gráfico compacto -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <style>
-  :root{--accent:#8f2d48;--muted:#6f6668;--card:#fff;--bg:#fbf7f6}
+  :root{
+    --accent:#8f2d48; --accent-2:#c05b7b; --muted:#6f6668; --bg:#fbf7f6;
+    --card:#fff; --good:#6ad3b2; --warn:#f6c85f; --bad:#f28b82;
+    --glass: rgba(255,255,255,0.6);
+  }
   *{box-sizing:border-box}
-  body{font-family:Inter,system-ui,Arial;margin:18px;background:var(--bg);color:#222}
-  .wrap{max-width:760px;margin:0 auto}
-  h1{margin:0 0 8px;font-size:18px}
+  body{font-family:Inter,system-ui,Arial;margin:18px;background:linear-gradient(180deg,#fff,var(--bg));color:#222}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;box-shadow:0 8px 26px rgba(143,45,72,0.12)}
+  h1{margin:0;font-size:20px}
+  .lead{color:var(--muted);font-size:13px}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:14px}
+
+  /* cards */
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 8px 26px rgba(123,47,74,0.06)}
   .small{font-size:13px;color:var(--muted)}
-  .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:12px}
+  .muted{color:var(--muted)}
+
+  /* form */
   label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-  input[type=range]{width:100%}
-  input,button,select,textarea{font-size:14px;padding:8px;border-radius:8px;border:1px solid #eee}
-  button{background:var(--accent);color:#fff;border:none;cursor:pointer}
-  .row{display:flex;gap:10px;align-items:center}
-  .timeline{display:flex;gap:6px;overflow:auto;padding:8px 0}
-  .day{min-width:86px;padding:8px;border-radius:8px;text-align:center;border:1px solid transparent}
-  .dot{width:10px;height:10px;border-radius:50%;margin:6px auto}
-  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  canvas{width:100%;height:48px;border-radius:6px}
-  /* modal */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:40}
-  .modal{background:#fff;padding:16px;border-radius:10px;max-width:420px;width:92%;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+  input[type=text], input[type=date], input[type=number], select {width:100%;padding:8px;border-radius:8px;border:1px solid #eee;font-size:14px}
+  .row{display:flex;gap:8px;align-items:center}
+  button{background:var(--accent);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+  .btn-ghost{background:#fff;color:var(--accent);border:1px solid #f0e0e3;padding:8px;border-radius:8px;cursor:pointer}
+
+  /* sliders with dynamic color */
+  .sliderWrap{margin-bottom:8px}
+  input[type=range]{-webkit-appearance:none;height:12px;border-radius:8px;background:linear-gradient(90deg,var(--good),var(--warn));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid rgba(0,0,0,0.12);box-shadow:0 4px 10px rgba(0,0,0,0.08)}
+  .val{font-weight:600}
+
+  /* timeline */
+  .timeline{display:flex;gap:10px;overflow:auto;padding-top:10px}
+  .day{min-width:110px;padding:10px;border-radius:12px;text-align:left;border:1px solid transparent;background:linear-gradient(180deg,#fff,#fff);transition:transform .22s, box-shadow .22s}
+  .day:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(0,0,0,0.12)}
+  .dayHeader{display:flex;justify-content:space-between;align-items:center}
+  .icons{display:flex;flex-direction:column;gap:6px;margin-top:8px;font-size:13px;color:var(--muted)}
+  .score{font-weight:700;color:var(--accent)}
+  .tiny{font-size:12px;color:var(--muted)}
+
+  /* charts and toggles */
+  .chartHeader{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .metricBtn{background:#fff;border:1px solid #eee;padding:6px 8px;border-radius:8px;cursor:pointer;color:var(--muted)}
+  .metricBtn.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border:none}
+
+  /* stats */
+  .stats{display:flex;gap:8px}
+  .stat{flex:1;padding:10px;border-radius:10px;background:linear-gradient(180deg,#fff,#fff);text-align:center}
+  .big{font-size:20px;font-weight:700;color:var(--accent)}
+
+  /* products */
+  .product{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;border:1px solid #f3edf0}
+  .pThumb{width:56px;height:56px;border-radius:8px;background:#eee;display:flex;align-items:center;justify-content:center;color:#999}
+
+  /* report cards */
+  .reportCard{border-left:6px solid var(--accent);padding:10px;border-radius:8px;background:linear-gradient(180deg,#fff,#fff)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  /* modal & overlay */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:none;align-items:center;justify-content:center;z-index:80}
+  .modal{background:#fff;padding:16px;border-radius:12px;max-width:520px;width:94%}
   .modal h3{margin:0 0 8px}
   .modal p{margin:8px 0;color:var(--muted)}
-  .modal .row{justify-content:flex-end;margin-top:12px}
-  .btn-ghost{background:#fff;color:var(--accent);border:1px solid #f0e0e3}
-  /* toast */
-  .toast-wrap{position:fixed;right:18px;bottom:18px;z-index:50;display:flex;flex-direction:column;gap:8px}
-  .toast{background:#111;color:#fff;padding:8px 12px;border-radius:8px;opacity:0.98}
-  /* disabled overlay for terms */
-  .overlay-disabled{position:fixed;inset:0;background:rgba(255,255,255,0.85);display:none;align-items:center;justify-content:center;z-index:30}
-  .muted{color:var(--muted)}
-  .tiny{font-size:12px;color:var(--muted)}
-  .trash{background:#f8eef0;color:#b21f3a;border-radius:6px;padding:6px 8px;border:none;cursor:pointer}
-  .settings{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .rowEnd{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  .toast{position:fixed;right:18px;bottom:18px;background:#111;color:#fff;padding:10px;border-radius:10px;z-index:99}
+
+  /* Nix persona */
+  .nix{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:10px;background:linear-gradient(90deg,#fff, #fff);border:1px dashed #f0e0e3}
+  .nixAvatar{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#a3d9c8,#ffdce6);display:flex;align-items:center;justify-content:center;font-weight:700}
+  .nixText{font-size:14px;color:#333}
+
+  /* responsive */
+  @media (max-width:980px){ .grid{grid-template-columns:1fr; } .timeline{gap:8px} }
 </style>
 </head>
 <body>
 <div class="wrap">
-
-  <h1>Skin Intelligence — Mini</h1>
-  <div class="small">Ahora con confirmaciones y permisos integrados en el widget (ventanas emergentes).</div>
-
-  <section class="card" id="mainCard">
-    <form id="form">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-        <div style="flex:1">
-          <label>Fecha</label>
-          <input id="date" type="date" required>
-        </div>
-        <div style="width:120px">
-          <label>Horas de sueño</label>
-          <input id="sleep" type="number" min="0" max="24" value="7">
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div>
-          <label>Hidratación <span id="hidVal" class="small">60</span></label>
-          <input id="hydration" type="range" min="0" max="100" value="60">
-        </div>
-        <div>
-          <label>Oleosidad <span id="sebumVal" class="small">40</span></label>
-          <input id="sebum" type="range" min="0" max="100" value="40">
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-        <div>
-          <label>Sensibilidad <span id="sensVal" class="small">20</span></label>
-          <input id="sensitivity" type="range" min="0" max="100" value="20">
-        </div>
-        <div>
-          <label style="display:block"><input id="breakout" type="checkbox"> Brotes hoy</label>
-        </div>
-      </div>
-
-      <div style="margin-top:8px">
-        <label>Productos usados (separar por coma)</label>
-        <input id="products" type="text" placeholder="e.g. Glow Serum, Ceramidas">
-      </div>
-
-      <div class="actions">
-        <button type="submit" id="saveBtn">Guardar</button>
-        <button id="export" type="button" class="btn-ghost">Exportar CSV</button>
-        <button id="reportBtn" type="button" class="btn-ghost">Generar resumen</button>
-        <button id="settingsBtn" type="button" class="btn-ghost">Ajustes</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <strong>Línea de tiempo (últimos 30 días)</strong>
-      <div class="tiny">Haz click en la tarjeta para ver o eliminar</div>
+  <header>
+    <div class="logo">Nix</div>
+    <div>
+      <h1>Skin Intelligence — Nix Edition</h1>
+      <div class="lead">Mini dashboard — puntuación diaria, predicción y personalidad Nix integrada.</div>
     </div>
-    <div class="timeline" id="timeline"></div>
-  </section>
-
-  <section class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <strong>Hidratación — mini gráfico</strong>
-      <div class="small" id="selectedInfo">—</div>
+    <div style="margin-left:auto">
+      <button id="exportBtn" class="btn-ghost">Exportar CSV</button>
     </div>
-    <canvas id="spark"></canvas>
-  </section>
+  </header>
 
-  <section class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <strong>Sugerencias automáticas</strong>
-      <button id="clearAllBtn" class="trash tiny">Borrar todo</button>
+  <div class="grid">
+    <!-- LEFT COLUMN: entrada rápida, stats, products -->
+    <div>
+      <section class="card" aria-labelledby="fast-entry-title">
+        <h3 id="fast-entry-title">Registro rápido</h3>
+        <form id="form">
+          <div class="row" style="gap:10px;margin-top:8px">
+            <div style="flex:1">
+              <label>Fecha</label>
+              <input id="date" type="date" required>
+            </div>
+            <div style="width:100px">
+              <label>Sueño (h)</label>
+              <input id="sleep" type="number" min="0" max="24" value="7">
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <label>Hidratación <span id="hidVal" class="val">60</span></label>
+            <div class="sliderWrap"><input id="hydration" type="range" min="0" max="100" value="60"></div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label>Oleosidad <span id="sebumVal" class="val">40</span></label>
+            <div class="sliderWrap"><input id="sebum" type="range" min="0" max="100" value="40"></div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label>Sensibilidad <span id="sensVal" class="val">20</span></label>
+            <div class="sliderWrap"><input id="sensitivity" type="range" min="0" max="100" value="20"></div>
+          </div>
+
+          <div style="margin-top:8px" class="row">
+            <label style="display:flex;align-items:center;gap:8px"><input id="breakout" type="checkbox"> Brotes hoy</label>
+            <div style="flex:1">
+              <label>Productos (coma)</label>
+              <input id="products" type="text" placeholder="Glow Serum, Ceramidas">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button id="saveBtn" type="submit">Guardar</button>
+            <button id="newBtn" type="button" class="btn-ghost">Nueva entrada</button>
+            <button id="settingsBtn" type="button" class="btn-ghost">Ajustes</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card" style="margin-top:12px">
+        <h4>Resumen</h4>
+        <div class="stats" style="margin-top:8px">
+          <div class="stat">
+            <div class="small">Promedio mensual</div>
+            <div class="big" id="statAvg">—%</div>
+            <div class="tiny" id="statTrend">↑ 0%</div>
+          </div>
+          <div class="stat">
+            <div class="small">Mejor semana</div>
+            <div class="big" id="statBestWeek">—</div>
+            <div class="tiny">Constancia <span id="statCons">—%</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:12px">
+        <h4>Productos</h4>
+        <div id="productsList" style="margin-top:8px"></div>
+      </section>
+
+      <section class="card" style="margin-top:12px">
+        <h4>Nix dice</h4>
+        <div class="nix" id="nixBlock">
+          <div class="nixAvatar">☁️</div>
+          <div class="nixText" id="nixText">Hola — analizaré tus registros y te daré sugerencias.</div>
+        </div>
+        <div style="margin-top:8px" class="tiny">Predicción para mañana</div>
+        <div class="reportCard" style="margin-top:8px" id="forecastCard">—</div>
+      </section>
     </div>
-    <div id="patterns" style="margin-top:8px" class="muted">—</div>
-  </section>
-</div>
 
-<!-- Modal backdrop -->
-<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-hidden="true">
-  <div class="modal" id="modalContent">
-    <!-- dynamic content -->
+    <!-- RIGHT COLUMN: timeline, chart, report -->
+    <div>
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h4 style="margin:0">Línea de tiempo</h4>
+          <div class="small">Últimos 30 días</div>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+
+      <section class="card" style="margin-top:12px">
+        <div class="chartHeader">
+          <div>
+            <button class="metricBtn active" data-metric="hydration">○ Hidratación</button>
+            <button class="metricBtn" data-metric="sebum">○ Oleosidad</button>
+            <button class="metricBtn" data-metric="sensitivity">○ Sensibilidad</button>
+          </div>
+          <div style="margin-left:auto" class="tiny">Mostrar varias métricas también es posible</div>
+        </div>
+        <canvas id="chartCanvas" height="180"></canvas>
+      </section>
+
+      <section class="card" style="margin-top:12px">
+        <h4>Reporte mensual</h4>
+        <div class="grid2" id="reportCards" style="margin-top:8px"></div>
+      </section>
+    </div>
   </div>
 </div>
 
-<!-- Disabled overlay (accept terms) -->
-<div class="overlay-disabled" id="overlay">
-  <div class="modal">
-    <h3>Bienvenida a Skin Intelligence</h3>
-    <p class="muted">Antes de usar, aceptá que los datos se guardarán localmente en tu navegador. No se envía nada fuera de tu dispositivo.</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-      <button id="acceptBtn">Aceptar y continuar</button>
-    </div>
-  </div>
+<!-- modal -->
+<div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+  <div class="modal" id="modalContent"></div>
 </div>
 
-<!-- Toasts -->
-<div class="toast-wrap" id="toastWrap"></div>
+<!-- small toast -->
+<div id="toast" style="display:none" class="toast"></div>
 
 <script>
-/* ===========================
-   Almacenamiento simple
-   =========================== */
-const KEY = 'si_mini_entries_v2';
-const ACCEPT_KEY = 'si_mini_accepted_v2';
-const SETTINGS_KEY = 'si_mini_settings_v2';
+/* ===============================================
+   Storage & util
+   =============================================== */
+const KEY = 'si_nix_entries_v1';
+const SETTINGS_KEY = 'si_nix_settings_v1';
 
-function loadEntries(){ try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch(e){ return [] } }
-function saveEntries(list){ localStorage.setItem(KEY, JSON.stringify(list)) }
-function loadAccepted(){ return localStorage.getItem(ACCEPT_KEY) === '1' }
-function setAccepted(){ localStorage.setItem(ACCEPT_KEY, '1') }
-function loadSettings(){ try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') } catch(e){ return {} } }
-function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) }
+function loadEntries(){ try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ return []; } }
+function saveEntries(entries){ localStorage.setItem(KEY, JSON.stringify(entries)); }
+function loadSettings(){ try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch(e){ return {}; } }
+function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
 
-/* ===========================
-   Elementos & utilidades
-   =========================== */
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function formatDate(d){ const dt = new Date(d); return dt.toLocaleDateString(); }
+
+/* ===============================================
+   Elements
+   =============================================== */
 const dateInput = document.getElementById('date');
 const hydration = document.getElementById('hydration');
 const sebum = document.getElementById('sebum');
@@ -165,352 +241,570 @@ const sensitivity = document.getElementById('sensitivity');
 const hidVal = document.getElementById('hidVal');
 const sebumVal = document.getElementById('sebumVal');
 const sensVal = document.getElementById('sensVal');
+const breakInput = document.getElementById('breakout');
+const productsInput = document.getElementById('products');
+const saveBtn = document.getElementById('saveBtn');
 const timelineEl = document.getElementById('timeline');
-const selectedInfo = document.getElementById('selectedInfo');
+const chartCanvas = document.getElementById('chartCanvas');
+const metricBtns = document.querySelectorAll('.metricBtn');
+const productsListEl = document.getElementById('productsList');
+const statAvgEl = document.getElementById('statAvg');
+const statTrendEl = document.getElementById('statTrend');
+const statBestWeekEl = document.getElementById('statBestWeek');
+const statConsEl = document.getElementById('statCons');
+const reportCardsEl = document.getElementById('reportCards');
+const nixText = document.getElementById('nixText');
+const forecastCard = document.getElementById('forecastCard');
+const exportBtn = document.getElementById('exportBtn');
 const modalBackdrop = document.getElementById('modalBackdrop');
 const modalContent = document.getElementById('modalContent');
-const overlay = document.getElementById('overlay');
-const toastWrap = document.getElementById('toastWrap');
-const settingsBtn = document.getElementById('settingsBtn');
-
-function todayISO(){ return new Date().toISOString().slice(0,10) }
+const toastEl = document.getElementById('toast');
 dateInput.value = todayISO();
 
-hydration.oninput = ()=> hidVal.textContent = hydration.value;
-sebum.oninput = ()=> sebumVal.textContent = sebum.value;
-sensitivity.oninput = ()=> sensVal.textContent = sensitivity.value;
+/* ===============================================
+   UI helpers: toast & modal
+   =============================================== */
+function toast(txt, ms=2200){
+  toastEl.textContent = txt; toastEl.style.display = 'block';
+  setTimeout(()=> toastEl.style.display='none', ms);
+}
 
-/* ========= Modal system ========= */
-function showModal({title='', html='', confirmText='OK', cancelText='Cancelar', onConfirm=null, onCancel=null, showCancel=true}) {
-  modalContent.innerHTML = `
-    <h3>${title}</h3>
-    <div>${html}</div>
-    <div class="row">
-      ${showCancel?`<button id="modalCancel" class="btn-ghost">${cancelText}</button>`:''}
-      <button id="modalConfirm">${confirmText}</button>
-    </div>`;
+function showModal({title='', html='', confirmText='OK', cancelText='Cancelar', onConfirm=null, onCancel=null, showCancel=true} = {}){
+  modalContent.innerHTML = `<h3>${title}</h3><div>${html}</div><div class="rowEnd" style="margin-top:12px">
+    ${ showCancel ? `<button id="modalCancel" class="btn-ghost">${cancelText}</button>` : '' }
+    <button id="modalConfirm">${confirmText}</button>
+  </div>`;
   modalBackdrop.style.display = 'flex';
-  modalBackdrop.setAttribute('aria-hidden','false');
   document.getElementById('modalConfirm').onclick = ()=>{
-    modalBackdrop.style.display = 'none';
-    modalBackdrop.setAttribute('aria-hidden','true');
-    onConfirm && onConfirm();
+    modalBackdrop.style.display = 'none'; onConfirm && onConfirm();
   };
-  const cancelBtn = document.getElementById('modalCancel');
-  if(cancelBtn){
-    cancelBtn.onclick = ()=>{
-      modalBackdrop.style.display = 'none';
-      modalBackdrop.setAttribute('aria-hidden','true');
-      onCancel && onCancel();
+  if(showCancel){
+    document.getElementById('modalCancel').onclick = ()=>{
+      modalBackdrop.style.display = 'none'; onCancel && onCancel();
     };
   }
 }
-function hideModal(){ modalBackdrop.style.display='none'; modalBackdrop.setAttribute('aria-hidden','true'); }
+modalBackdrop.addEventListener('click', (e)=> { if(e.target===modalBackdrop) modalBackdrop.style.display='none'; });
 
-/* ========= Toasts ========= */
-function toast(text, ms=3000){
-  const t = document.createElement('div'); t.className='toast'; t.textContent = text;
-  toastWrap.appendChild(t);
-  setTimeout(()=> t.style.opacity='0.01', ms-300);
-  setTimeout(()=> t.remove(), ms);
-}
-
-/* ========= Data operations ========= */
-function saveEntry(entry){
-  const entries = loadEntries();
-  const idx = entries.findIndex(e=>e.date===entry.date);
-  if(idx>=0) entries[idx]=entry; else entries.push(entry);
-  entries.sort((a,b)=> a.date < b.date ? -1 : 1);
-  saveEntries(entries);
-}
-
-function deleteEntry(date){
-  const entries = loadEntries().filter(e=>e.date !== date);
-  saveEntries(entries);
-  toast('Entrada eliminada');
-  renderAll();
-}
-
-function clearAll(){
-  saveEntries([]);
-  toast('Todos los datos borrados');
-  renderAll();
-}
-
-/* ========= Events: save / export / report / settings / clear ========= */
-document.getElementById('form').addEventListener('submit', e=>{
-  e.preventDefault();
-  if(!loadAccepted()){
-    showModal({
-      title: 'Aceptar antes de guardar',
-      html: '<p class="muted">Tenés que aceptar que los datos se guardarán localmente. ¿Querés aceptar ahora?</p>',
-      confirmText:'Aceptar',
-      cancelText:'No',
-      onConfirm: ()=> { setAccepted(); overlay.style.display='none'; proceedSave(); toast('Datos guardados localmente'); },
-      onCancel: ()=> toast('No guardado')
-    });
-  } else {
-    proceedSave();
-    toast('Guardado');
+/* ===============================================
+   Styling: dynamic slider color using background
+   =============================================== */
+function sliderColor(value, type){
+  // returns CSS gradient for track based on thresholds
+  // type: 'hydration' (higher better), 'sebum' (mid-range better), 'sensitivity' (lower better)
+  let color;
+  if(type==='hydration'){
+    if(value>=75) color = getComputedStyle(document.documentElement).getPropertyValue('--good');
+    else if(value>=45) color = getComputedStyle(document.documentElement).getPropertyValue('--warn');
+    else color = getComputedStyle(document.documentElement).getPropertyValue('--bad');
+  } else if(type==='sensitivity'){
+    if(value<=25) color = getComputedStyle(document.documentElement).getPropertyValue('--good');
+    else if(value<=55) color = getComputedStyle(document.documentElement).getPropertyValue('--warn');
+    else color = getComputedStyle(document.documentElement).getPropertyValue('--bad');
+  } else { // sebum: mid-range ideal (30..60)
+    if(value>=30 && value<=60) color = getComputedStyle(document.documentElement).getPropertyValue('--good');
+    else if(value>=20 && value<30 || value>60 && value<=75) color = getComputedStyle(document.documentElement).getPropertyValue('--warn');
+    else color = getComputedStyle(document.documentElement).getPropertyValue('--bad');
   }
+  // gradient from left to position
+  const pct = value;
+  return `linear-gradient(90deg, ${color} ${pct}%, #eee ${pct}%)`;
+}
+function updateSlidersUI(){
+  hidVal.textContent = hydration.value;
+  sebumVal.textContent = sebum.value;
+  sensVal.textContent = sensitivity.value;
+  hydration.style.background = sliderColor(hydration.value,'hydration');
+  sebum.style.background = sliderColor(sebum.value,'sebum');
+  sensitivity.style.background = sliderColor(sensitivity.value,'sensitivity');
+}
+hydration.addEventListener('input', updateSlidersUI);
+sebum.addEventListener('input', updateSlidersUI);
+sensitivity.addEventListener('input', updateSlidersUI);
+updateSlidersUI();
+
+/* ===============================================
+   Core: score calculation & utilities
+   =============================================== */
+function computeScore(entry){
+  // Weighted components:
+  // hydration (0..100) weight 0.35
+  // sensitivity (lower better) weight 0.2
+  // breakout penalty weight 0.25 (0 or -30)
+  // sleep (optimal 7-9) weight 0.12
+  // sebum (mid optimal) weight 0.08
+  const h = entry.hydration;
+  const s = 100 - entry.sensitivity; // invert
+  const breakoutPenalty = entry.breakout ? -30 : 0;
+  // sleep score: best at 8
+  const sleepDiff = Math.min(Math.abs((entry.sleep||0)-8), 8);
+  const sleepScore = Math.max(0, 100 - (sleepDiff*8)); // 100..36
+  // sebum score: ideal 45
+  const sebumScore = Math.max(0, 100 - Math.abs(entry.sebum - 45)*2);
+  const score = Math.round(
+    h*0.35 +
+    s*0.2 +
+    (breakoutPenalty) * 0.25 +
+    sleepScore*0.12 +
+    sebumScore*0.08
+  );
+  // clamp 0..100
+  return Math.max(0, Math.min(100, score));
+}
+
+/* ===============================================
+   Data: save, delete, list
+   =============================================== */
+function getEntriesSorted(){
+  return loadEntries().sort((a,b)=> a.date < b.date ? -1 : 1);
+}
+function addOrUpdateEntry(entry){
+  const entries = getEntriesSorted();
+  const idx = entries.findIndex(e=>e.date===entry.date);
+  if(idx>=0) entries[idx] = entry; else entries.push(entry);
+  saveEntries(entries);
+}
+function deleteEntry(date){
+  const entries = getEntriesSorted().filter(e=> e.date !== date);
+  saveEntries(entries);
+}
+
+/* ===============================================
+   Timeline rendering
+   =============================================== */
+function colorFor(e){
+  if(e.breakout) return getComputedStyle(document.documentElement).getPropertyValue('--bad');
+  if(e.hydration>70) return getComputedStyle(document.documentElement).getPropertyValue('--good');
+  if(e.sebum>70) return getComputedStyle(document.documentElement).getPropertyValue('--warn');
+  return '#e9dfe1';
+}
+
+function createDayCard(e){
+  const score = computeScore(e);
+  const el = document.createElement('div'); el.className = 'day';
+  el.innerHTML = `
+    <div class="dayHeader"><div class="tiny">${formatDate(e.date)}</div><div class="score">🌸 ${score}</div></div>
+    <div class="icons">
+      <div>💧 ${e.hydration}%</div>
+      <div>😴 ${e.sleep}h</div>
+      <div>✨ ${(e.products||[]).slice(0,2).join(', ') || 'Rutina'}</div>
+      <div style="color:${e.breakout? 'var(--bad)': 'inherit'}">⚠ ${e.breakout? 'Brote':''}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+      <button class="btn-ghost viewBtn">Ver</button>
+      <button class="btn-ghost delBtn">Eliminar</button>
+    </div>
+  `;
+  el.querySelector('.viewBtn').onclick = ()=> {
+    showModal({
+      title: `Detalle ${formatDate(e.date)}`,
+      html: `<div class="grid2">
+        <div>
+          <div class="small">Score</div><div style="font-weight:700;font-size:20px">🌸 ${score}/100</div>
+        </div>
+        <div>
+          <div class="small">Última actualización</div><div class="tiny">${new Date(e.savedAt).toLocaleString()}</div>
+        </div>
+      </div>
+      <hr>
+      <p class="muted">Hidratación: ${e.hydration}%<br>Oleosidad: ${e.sebum}%<br>Sensibilidad: ${e.sensitivity}%<br>Sueño: ${e.sleep}h<br>Productos: ${(e.products||[]).join(', ') || '—'}</p>`,
+      confirmText:'Cerrar', showCancel:false
+    });
+  };
+  el.querySelector('.delBtn').onclick = ()=> {
+    showModal({
+      title: 'Eliminar entrada',
+      html: `<p class="muted">Eliminar la entrada del ${formatDate(e.date)} es irreversible. Confirmás?</p>`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      onConfirm: ()=>{ deleteEntry(e.date); renderAll(); toast('Entrada eliminada'); },
+      onCancel: ()=> {}
+    });
+  };
+  el.style.borderColor = colorFor(e);
+  return el;
+}
+
+/* ===============================================
+   Chart (Chart.js) - multi metrics toggle
+   =============================================== */
+let chart = null;
+function renderChart(focus='hydration'){
+  const entries = getEntriesSorted().slice(-60);
+  const labels = entries.map(e=> formatDate(e.date));
+  const dataSets = [];
+  // hydration
+  dataSets.push({
+    label:'Hidratación', data: entries.map(e=>e.hydration), borderColor:'#7b2f4a', backgroundColor:'rgba(123,47,74,0.06)', tension:0.25, pointRadius:2, hidden: focus!=='hydration' && focus!=='all'
+  });
+  dataSets.push({
+    label:'Oleosidad', data: entries.map(e=>e.sebum), borderColor:'#f6c85f', backgroundColor:'rgba(246,200,95,0.06)', tension:0.25, pointRadius:2, hidden: focus!=='sebum' && focus!=='all'
+  });
+  dataSets.push({
+    label:'Sensibilidad', data: entries.map(e=>e.sensitivity), borderColor:'#f28b82', backgroundColor:'rgba(242,139,130,0.06)', tension:0.25, pointRadius:2, hidden: focus!=='sensitivity' && focus!=='all'
+  });
+  if(chart) chart.destroy();
+  chart = new Chart(chartCanvas.getContext('2d'), {
+    type:'line',
+    data: { labels, datasets: dataSets },
+    options: {
+      plugins: { legend: { display: true } },
+      scales: { y: { min:0, max:100 } },
+      responsive:true,
+      maintainAspectRatio:false
+    }
+  });
+}
+
+/* metric button handlers */
+metricBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    metricBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderChart(btn.dataset.metric);
+  });
 });
 
-function proceedSave(){
-  const entry = {
-    date: dateInput.value,
-    hydration: +hydration.value,
-    sebum: +sebum.value,
-    sensitivity: +sensitivity.value,
-    breakout: document.getElementById('breakout').checked ? 1 : 0,
-    sleep: +document.getElementById('sleep').value || 0,
-    products: (document.getElementById('products').value || '').split(',').map(s=>s.trim()).filter(Boolean),
-    savedAt: new Date().toISOString()
-  };
-  saveEntry(entry);
-  renderAll();
+/* ===============================================
+   Products panel: compute usage & compatibility
+   =============================================== */
+function renderProducts(){
+  const entries = getEntriesSorted();
+  const map = {};
+  entries.forEach(e=>{
+    (e.products||[]).forEach(p=>{
+      if(!p) return;
+      if(!map[p]) map[p] = {count:0, last: e.date, irritations:0};
+      map[p].count++;
+      if(new Date(e.date) > new Date(map[p].last)) map[p].last = e.date;
+      if(e.sensitivity > 60 || e.irritation) map[p].irritations++;
+    });
+  });
+  productsListEl.innerHTML = '';
+  if(Object.keys(map).length===0){
+    productsListEl.innerHTML = `<div class="tiny muted">No hay productos registrados</div>`;
+    return;
+  }
+  Object.entries(map).forEach(([name,info])=>{
+    const compat = Math.max(40, Math.round(100 - (info.irritations/info.count)*100)); // simple heuristic
+    const div = document.createElement('div'); div.className='product'; div.style.marginBottom='8px';
+    div.innerHTML = `<div class="pThumb">${name.split(' ').slice(0,2).map(s=>s[0]).join('')}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${name}</strong><div class="tiny">Último uso: ${formatDate(info.last)}</div></div>
+          <div style="text-align:right">
+            <div style="font-weight:700">${compat}%</div>
+            <div class="tiny">${'★'.repeat(Math.round(compat/20))}</div>
+          </div>
+        </div>
+        <div class="tiny muted" style="margin-top:6px">Usado ${info.count} veces</div>
+      </div>`;
+    productsListEl.appendChild(div);
+  });
 }
 
-/* Export CSV */
-document.getElementById('export').onclick = ()=>{
-  const entries = loadEntries();
-  if(entries.length===0){ toast('No hay datos para exportar'); return; }
+/* ===============================================
+   Report cards (visual)
+   =============================================== */
+function renderReportCards(){
+  const entries = getEntriesSorted().slice(-30);
+  const avg = arr => Math.round(arr.reduce((a,b)=>a+b,0)/Math.max(1,arr.length));
+  if(entries.length===0){
+    reportCardsEl.innerHTML = `<div class="reportCard">Sin datos suficientes</div>`;
+    return;
+  }
+  const hydrationAvg = avg(entries.map(e=>e.hydration));
+  const sebumAvg = avg(entries.map(e=>e.sebum));
+  const sensAvg = avg(entries.map(e=>e.sensitivity));
+  const totalBreakouts = entries.reduce((s,e)=>s+ (e.breakout?1:0),0);
+  const sleepAvg = (entries.reduce((s,e)=>s+(e.sleep||0),0)/entries.length).toFixed(1);
+  reportCardsEl.innerHTML = `
+    <div class="reportCard">
+      <div class="small">Hidratación</div><div style="font-weight:700;font-size:20px">${hydrationAvg}%</div><div class="tiny">↑ +${Math.max(0, hydrationAvg - 60)}%</div>
+    </div>
+    <div class="reportCard">
+      <div class="small">Luminosidad</div><div style="font-weight:700;font-size:20px">${(hydrationAvg>60)?'Alta':'Media'}</div>
+      <div class="tiny">Basado en hidratación y textura</div>
+    </div>
+    <div class="reportCard">
+      <div class="small">Brotes</div><div style="font-weight:700;font-size:20px">${totalBreakouts}</div>
+      <div class="tiny">Últimas 4 semanas</div>
+    </div>
+    <div class="reportCard">
+      <div class="small">Sueño (prom.)</div><div style="font-weight:700;font-size:20px">${sleepAvg} h</div>
+      <div class="tiny">Promedio de las últimas entradas</div>
+    </div>`;
+}
+
+/* ===============================================
+   Nix messages + Forecast (simple heuristics)
+   =============================================== */
+function computeNixMessage(){
+  const entries = getEntriesSorted();
+  if(entries.length===0) return "Aún no hay datos. Empezá registrando tu piel para que Nix pueda ayudarte.";
+  // detect product success (product used >6 veces and avg sensitivity lower after use)
+  const products = {};
+  entries.forEach((e,i)=>{
+    (e.products||[]).forEach(p=>{
+      if(!products[p]) products[p] = {dates:[], sensBefore:[], sensAfter:[]};
+      products[p].dates.push(e.date);
+    });
+  });
+  // basic pattern: sebum peaks -> breakouts
+  let sebumTriggers=0, sebumFollowing=0;
+  for(let i=0;i<entries.length;i++){
+    if(entries[i].sebum>70){ sebumTriggers++;
+      for(let lag=1;lag<=3;lag++){
+        const next = entries[i+lag];
+        if(next && next.breakout){ sebumFollowing++; break; }
+      }
+    }
+  }
+  // sleep correlation
+  const poorSleep = entries.filter(e=> (e.sleep||0) < 7);
+  const poorHydRatio = poorSleep.length ? (poorSleep.filter(e=>e.hydration<50).length / poorSleep.length) : 0;
+  // build message
+  const parts = [];
+  if(sebumTriggers>=3 && sebumFollowing / sebumTriggers > 0.4){
+    parts.push(`He notado que los picos de oleosidad suelen preceder brotes en 1-3 días. Considerá reducir exfoliantes agresivos o limpiar con suavidad en esos días.`);
+  }
+  if(poorSleep.length>=3 && poorHydRatio>0.4){
+    parts.push(`Dormiste menos de 7h en varias ocasiones y eso parece bajar tu hidratación ~${Math.round(poorHydRatio*100)}% en esos días. Intentemos priorizar sueño esta semana.`);
+  }
+  // product highlight (most used)
+  const productCounts = {};
+  entries.forEach(e => (e.products||[]).forEach(p=> productCounts[p]=(productCounts[p]||0)+1));
+  const topProduct = Object.entries(productCounts).sort((a,b)=>b[1]-a[1])[0];
+  if(topProduct && topProduct[1] >= 6){
+    parts.push(`Hace ${topProduct[1]} días/veces que usás ${topProduct[0]}. Nix estima compatibilidad alta — seguí observando.`);
+  }
+  if(parts.length===0) parts.push('Todo se ve bastante estable. Buen trabajo — seguí registrando para que pueda darte mejores predicciones.');
+  return parts.join('\n\n');
+}
+
+function computeForecast(){
+  const entries = getEntriesSorted();
+  if(entries.length===0) return 'Sin datos';
+  // simple forecast: average last 7 days
+  const last = entries.slice(-7);
+  const avg = arr => Math.round(arr.reduce((a,b)=>a+b,0)/arr.length);
+  const hydrationAvg = avg(last.map(e=>e.hydration));
+  const sensAvg = avg(last.map(e=>e.sensitivity));
+  const sebumAvg = avg(last.map(e=>e.sebum));
+  const breakouts = last.reduce((s,e)=>s + (e.breakout?1:0),0);
+  const scoreForecast = Math.round( (hydrationAvg*0.5 + (100-sensAvg)*0.25 + (100 - Math.abs(sebumAvg-45))/1*0.25)/1 );
+  // risk flag
+  const risk = (breakouts>=2 || sebumAvg>75 || sensAvg>65) ? 'Alto' : (sebumAvg>60 || sensAvg>50 ? 'Medio' : 'Bajo');
+  return {
+    score: scoreForecast,
+    risk,
+    barrier: sensAvg>50 ? 'Debilitada' : 'Estable',
+    luminosity: hydrationAvg>65 ? 'Alta' : 'Media',
+    advice: sensAvg>50 ? 'Evitar ingredientes irritantes hoy.' : 'Rutina normal.'
+  };
+}
+
+/* ===============================================
+   Stats: monthly avg, best week, constancy
+   =============================================== */
+function computeStats(){
+  const entries = getEntriesSorted();
+  if(entries.length===0) return {avg:0,trend:0,bestWeek:'—',cons:0,days:0};
+  const last30 = entries.slice(-30);
+  const avg = Math.round(last30.reduce((s,e)=>s+e.hydration,0)/last30.length);
+  const prev30 = entries.slice(-60,-30);
+  const prevAvg = prev30.length ? Math.round(prev30.reduce((s,e)=>s+e.hydration,0)/prev30.length) : avg;
+  const trend = Math.round(((avg - prevAvg)/Math.max(1,prevAvg))*100);
+  // best week: compute weekly averages over last 8 weeks
+  const weeks = {};
+  entries.forEach(e=>{
+    const dt = new Date(e.date);
+    const wk = `${dt.getFullYear()}-${Math.ceil((dt.getDate())/7)+(dt.getMonth()*4)}`;
+    weeks[wk] = weeks[wk]||[]; weeks[wk].push(e.hydration);
+  });
+  const weekAvg = Object.entries(weeks).map(([k,v])=> [k, Math.round(v.reduce((a,b)=>a+b,0)/v.length)]);
+  weekAvg.sort((a,b)=>b[1]-a[1]);
+  const bestWeek = weekAvg[0] ? weekAvg[0][0] : '—';
+  const constancy = Math.round((entries.length / 30) * 100); // percent of days registered in last 30
+  return {avg,trend,bestWeek,constancy,days: entries.length};
+}
+
+/* ===============================================
+   Render everything
+   =============================================== */
+function renderTimeline(){
+  timelineEl.innerHTML = '';
+  const entries = getEntriesSorted().slice(-30).reverse();
+  entries.forEach(e=>{
+    const card = createDayCard(e);
+    timelineEl.appendChild(card);
+  });
+}
+
+function renderStats(){
+  const s = computeStats();
+  statAvgEl.textContent = `${s.avg}%`;
+  statTrendEl.textContent = `${s.trend>=0? '↑':'↓'} ${Math.abs(s.trend)}%`;
+  statBestWeekEl.textContent = s.bestWeek;
+  statConsEl.textContent = `${s.constancy}%`;
+}
+
+function renderNix(){
+  nixText.textContent = computeNixMessage();
+  const f = computeForecast();
+  if(typeof f === 'string') forecastCard.textContent = f;
+  else forecastCard.innerHTML = `<div style="font-weight:700">Skin Forecast — ${f.score}/100</div>
+    <div class="tiny">Riesgo de brotes: ${f.risk}</div>
+    <div class="tiny">Barrera: ${f.barrier}</div>
+    <div class="tiny">Luminosidad: ${f.luminosity}</div>
+    <div class="tiny" style="margin-top:6px">Consejo: ${f.advice}</div>`;
+}
+
+/* ===============================================
+   Export CSV
+   =============================================== */
+exportBtn.addEventListener('click', ()=>{
+  const entries = getEntriesSorted();
+  if(!entries.length){ toast('No hay datos'); return; }
   const header = ['date','hydration','sebum','sensitivity','breakout','sleep','products','savedAt'];
   const csv = [header.join(',')].concat(entries.map(e=>[
     e.date,e.hydration,e.sebum,e.sensitivity,e.breakout,e.sleep,
     `"${(e.products||[]).join(';')}"`,e.savedAt
   ].join(','))).join('\n');
-  const blob = new Blob([csv],{type:'text/csv'});
-  const url = URL.createObjectURL(blob);
+  const blob = new Blob([csv],{type:'text/csv'}); const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url; a.download='skin-data.csv'; a.click(); URL.revokeObjectURL(url);
-  toast('CSV descargado');
-};
+  toast('CSV preparado');
+});
 
-/* Generate summary report */
-document.getElementById('reportBtn').onclick = ()=> {
-  const entries = loadEntries();
-  if(entries.length===0){ toast('Sin datos para generar reporte'); return; }
-  const last30 = entries.slice(-30);
-  const avg = arr => Math.round(arr.reduce((a,b)=>a+b,0)/arr.length || 0);
-  const report = [
-    `Reporte — últimos ${last30.length} días`,
-    `Hidratación media: ${avg(last30.map(e=>e.hydration))}%`,
-    `Brotes totales: ${last30.reduce((s,e)=>s+e.breakout,0)}`,
-    `Promedio sueño: ${avg(last30.map(e=>e.sleep))} h`,
-    `Productos más usados: ${mostUsed(last30).join(', ') || '—'}`,
-    '',
-    'Recomendación:',
-    '- Priorizar hidratación si hidratación media < 55.',
-    '- Revisar si picos de sebo preceden brotes (ver sugerencias automáticas).'
-  ].join('\n');
-  showModal({ title:'Reporte', html:`<pre style="white-space:pre-wrap">${report}</pre>`, confirmText:'OK', showCancel:false });
-};
+/* ===============================================
+   Form: save new entry
+   =============================================== */
+document.getElementById('form').addEventListener('submit', (ev)=>{
+  ev.preventDefault();
+  const entry = {
+    date: dateInput.value,
+    hydration: +hydration.value,
+    sebum: +sebum.value,
+    sensitivity: +sensitivity.value,
+    breakout: breakInput.checked ? 1 : 0,
+    sleep: +document.getElementById('sleep').value || 0,
+    products: (productsInput.value || '').split(',').map(s=>s.trim()).filter(Boolean),
+    savedAt: new Date().toISOString()
+  };
+  addOrUpdateEntry(entry);
+  renderAll();
+  toast('Entrada guardada');
+});
 
-/* Settings modal */
-settingsBtn.onclick = ()=>{
-  const settings = loadSettings();
-  const html = `
-    <p class="muted">Recordatorio: podes elegir recordatorio en-widget (funciona mientras la página esté abierta) o permitir notificaciones del navegador.</p>
-    <div class="settings">
-      <div class="muted">Recordatorio en-widget</div>
-      <label><input id="inWidgetRem" type="checkbox" ${settings.inWidget ? 'checked':''}></label>
-    </div>
-    <div style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-      <button id="requestBrowserNotif" class="btn-ghost">Permitir notificaciones del navegador</button>
-    </div>
-  `;
+/* New entry btn clears inputs for quick add */
+document.getElementById('newBtn').addEventListener('click', ()=>{
+  dateInput.value = todayISO();
+  hydration.value = 60; sebum.value = 40; sensitivity.value = 20; breakInput.checked = false; productsInput.value = '';
+  updateSlidersUI();
+});
+
+/* Settings: simple modal to clear data */
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
   showModal({
     title:'Ajustes',
-    html,
-    confirmText:'Guardar',
-    cancelText:'Cancelar',
-    onConfirm: ()=>{
-      const newSettings = { inWidget: !!document.getElementById('inWidgetRem').checked };
-      saveSettings(newSettings);
-      applyReminders();
-      toast('Ajustes guardados');
-    },
-    onCancel: ()=>{}
+    html: `<p class="muted">Acciones del widget</p>
+      <div style="display:flex;gap:8px">
+        <button id="clearAll" class="btn-ghost">Borrar todo</button>
+        <button id="importDemo" class="btn-ghost">Cargar demo</button>
+      </div>`,
+    confirmText:'Cerrar',
+    showCancel:false
   });
-  // bind request button
   setTimeout(()=>{
-    const btn = document.getElementById('requestBrowserNotif');
-    btn.onclick = async ()=>{
-      if(!("Notification" in window)){ toast('Notificaciones no soportadas en este navegador'); return; }
-      const perm = await Notification.requestPermission();
-      toast('Permiso: ' + perm);
-    };
-  },10);
-};
-
-/* Clear all with confirmation */
-document.getElementById('clearAllBtn').onclick = ()=>{
-  showModal({
-    title: 'Borrar todos los datos',
-    html: '<p class="muted">Esto eliminará TODAS las entradas almacenadas localmente. ¿Estás seguro?</p>',
-    confirmText: 'Borrar todo',
-    cancelText: 'Cancelar',
-    onConfirm: ()=> { clearAll(); },
-    onCancel: ()=> toast('Acción cancelada')
-  });
-};
-
-/* ========= Timeline rendering & delete flow ========= */
-function colorFor(e){
-  if(e.breakout) return '#f28b82';
-  if(e.hydration>70) return '#6ad3b2';
-  if(e.sebum>70) return '#f6c85f';
-  return '#d6c7cb';
-}
-
-function renderTimeline(){
-  const entries = loadEntries();
-  timelineEl.innerHTML = '';
-  const last = entries.slice(-30);
-  last.forEach(e=>{
-    const d = document.createElement('div');
-    d.className = 'day card';
-    d.style.minWidth='110px';
-    d.innerHTML = `
-      <div style="font-size:12px">${e.date}</div>
-      <div class="dot" style="background:${colorFor(e)}"></div>
-      <div class="small">${e.hydration}% • ${e.breakout? '⚠':'OK'}</div>
-      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
-        <button class="btn-ghost tiny viewBtn">Ver</button>
-        <button class="trash tiny delBtn">Eliminar</button>
-      </div>
-    `;
-    // view
-    d.querySelector('.viewBtn').onclick = ()=> {
+    document.getElementById('clearAll').onclick = ()=> {
       showModal({
-        title: `Detalle ${e.date}`,
-        html: `<p class="muted">Hidratación: ${e.hydration}%<br>Oleosidad: ${e.sebum}%<br>Sensibilidad: ${e.sensitivity}%<br>Sueño: ${e.sleep}h<br>Brotes: ${e.breakout? 'Sí':'No'}<br>Productos: ${(e.products||[]).join(', ')}</p>`,
-        confirmText:'Cerrar',
-        showCancel:false
-      });
-    };
-    // delete
-    d.querySelector('.delBtn').onclick = ()=> {
-      showModal({
-        title: 'Eliminar entrada',
-        html: `<p class="muted">Eliminar la entrada del día <strong>${e.date}</strong> es irreversible. ¿Confirmás?</p>`,
-        confirmText:'Eliminar',
+        title:'Confirmar borrado',
+        html: `<p class="muted">¿Eliminar todos los registros guardados?</p>`,
+        confirmText:'Borrar todo',
         cancelText:'Cancelar',
-        onConfirm: ()=> { deleteEntry(e.date); },
-        onCancel: ()=> toast('No eliminada')
+        onConfirm: ()=> { saveEntries([]); renderAll(); toast('Datos borrados'); },
+        onCancel: ()=> {}
       });
     };
-    timelineEl.appendChild(d);
-  });
-}
+    document.getElementById('importDemo').onclick = ()=> {
+      showModal({
+        title:'Cargar datos demo',
+        html: '<p class="muted">Esto añadirá ejemplos para que pruebes la app. ¿Querés continuar?</p>',
+        confirmText:'Cargar',
+        cancelText:'Cancelar',
+        onConfirm: ()=> { loadDemo(); renderAll(); toast('Demo cargada'); },
+        onCancel: ()=> {}
+      });
+    };
+  },60);
+});
 
-/* ========= Sparkline ========= */
-const spark = document.getElementById('spark');
-const Sctx = spark.getContext('2d');
-function renderSpark(){
-  const entries = loadEntries().slice(-30);
-  const w = spark.width = spark.clientWidth;
-  const h = spark.height = 48;
-  Sctx.clearRect(0,0,w,h);
-  if(entries.length===0) return;
-  const vals = entries.map(x=>x.hydration);
-  const max = Math.max(...vals), min = Math.min(...vals);
-  Sctx.beginPath(); Sctx.lineWidth=2; Sctx.strokeStyle='#8f2d48';
-  vals.forEach((v,i)=>{
-    const x = 4 + (i/(vals.length-1||1))*(w-8);
-    const y = 4 + (1 - (v-min)/(max-min||1))*(h-8);
-    if(i===0) Sctx.moveTo(x,y); else Sctx.lineTo(x,y);
-  });
-  Sctx.stroke();
-  // fill
-  Sctx.lineTo(w-4,h-4); Sctx.lineTo(4,h-4); Sctx.closePath();
-  Sctx.fillStyle='rgba(143,45,72,0.08)'; Sctx.fill();
-}
-
-/* ========= Patterns (simple) ========= */
-function analyzePatterns(){
-  const entries = loadEntries();
-  if(entries.length<6) return ['Necesitás al menos 6 entradas para patrones confiables'];
-  let triggers=0, follow=0;
-  for(let i=0;i<entries.length;i++){
-    if(entries[i].sebum>70){
-      triggers++;
-      for(let lag=1;lag<=3;lag++){
-        const next = entries[i+lag];
-        if(next && next.breakout) { follow++; break; }
-      }
-    }
-  }
-  const out = [];
-  if(triggers>=3 && (follow/triggers) > 0.4) out.push('Alta probabilidad de brotes 1-3 días tras picos de oleosidad.');
-  const poorSleep = entries.filter(e=>e.sleep<7);
-  if(poorSleep.length>=4){
-    const lowHyd = poorSleep.filter(e=>e.hydration<50);
-    if(lowHyd.length/poorSleep.length>0.4) out.push('Hidratación tiende a bajar en días con <7h de sueño.');
-  }
-  if(out.length===0) out.push('No se detectaron patrones fuertes con los datos actuales.');
-  return out;
-}
-function renderPatterns(){ document.getElementById('patterns').innerHTML = analyzePatterns().map(p=>`• ${p}`).join('\n'); }
-
-/* ========= Most used products ========= */
-function mostUsed(entries){
-  const map = {};
-  entries.forEach(e=> (e.products||[]).forEach(p=> map[p] = (map[p]||0)+1) );
-  return Object.entries(map).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,3);
-}
-
-/* ========= Reminders (in-widget) ========= */
-let reminderInterval = null;
-function applyReminders(){
-  const settings = loadSettings();
-  clearInterval(reminderInterval);
-  if(settings.inWidget){
-    // every minute check if today has entry
-    reminderInterval = setInterval(()=>{
-      const entries = loadEntries();
-      const hasToday = entries.some(e => e.date === todayISO());
-      if(!hasToday) toast('Recordatorio: no registraste tu piel hoy');
-    }, 60*1000);
-    toast('Recordatorio en-widget activado (mientras la página esté abierta)');
-  } else {
-    toast('Recordatorio en-widget desactivado');
-  }
-}
-
-/* ========= Initial render & acceptance flow ========= */
-function renderAll(){
-  renderTimeline(); renderSpark(); renderPatterns();
-  const last = loadEntries().slice(-1)[0];
-  if(last) selectedInfo.textContent = `${last.date} • Hid:${last.hydration}% • Brotes:${last.breakout? 'sí':'no'}`;
-  else selectedInfo.textContent = '—';
-}
-
-document.getElementById('acceptBtn').onclick = ()=>{
-  setAccepted();
-  overlay.style.display='none';
-  toast('Gracias — podés usar el widget');
-};
-
-/* If user has not accepted, show overlay */
-if(!loadAccepted()){ overlay.style.display='flex'; } else { overlay.style.display='none'; }
-
-/* Load demo data if empty (optional, to see UI) */
-if(loadEntries().length===0){
+/* ===============================================
+   Demo data helper
+   =============================================== */
+function loadDemo(){
+  // small sample 30 days
   const demo = [];
-  for(let i=10;i>=0;i--){
+  for(let i=29;i>=0;i--){
     const d = new Date(); d.setDate(d.getDate()-i);
-    demo.push({ date: d.toISOString().slice(0,10), hydration: Math.round(55 + Math.random()*20-10), sebum: Math.round(40 + Math.random()*30-10), sensitivity: Math.round(20+Math.random()*20-10), breakout: Math.random()<0.12?1:0, sleep: 6+Math.round(Math.random()*3), products: (Math.random()<0.5?['Glow Serum']:['Rutina base']), savedAt: new Date().toISOString()});
+    demo.push({
+      date: d.toISOString().slice(0,10),
+      hydration: Math.round(50 + Math.sin(i/3)*10 + (Math.random()*12-6)),
+      sebum: Math.round(45 + Math.cos(i/5)*12 + (Math.random()*10-5)),
+      sensitivity: Math.round(25 + (Math.random()*30-10)),
+      breakout: Math.random()<0.12?1:0,
+      sleep: Math.round(6 + Math.random()*3),
+      products: Math.random()<0.5? ['Glow Serum']: ['Ceramidas Calm'],
+      savedAt: new Date().toISOString()
+    });
   }
   saveEntries(demo);
 }
 
-/* apply settings & render */
-applyReminders();
+/* ===============================================
+   Initial render function
+   =============================================== */
+function renderAll(){
+  renderTimeline();
+  renderChart('hydration');
+  renderProducts();
+  renderReportCards();
+  renderStats();
+  renderNix();
+}
+
+/* ===============================================
+   Initialize: if no data, load demo lightly (optional)
+   =============================================== */
+if(getEntriesSorted().length===0){
+  // keep empty by default; comment next line to start blank
+  loadDemo();
+}
 renderAll();
 
-/* make sure modals close when clicking backdrop (but not on modal itself) */
-modalBackdrop.addEventListener('click', (ev)=>{
-  if(ev.target === modalBackdrop){ hideModal(); }
+/* update sliders UI on load */
+function updateSlidersUI(){
+  hidVal.textContent = hydration.value;
+  sebumVal.textContent = sebum.value;
+  sensVal.textContent = sensitivity.value;
+  hydration.style.background = sliderColor(hydration.value,'hydration');
+  sebum.style.background = sliderColor(sebum.value,'sebum');
+  sensitivity.style.background = sliderColor(sensitivity.value,'sensitivity');
+}
+updateSlidersUI();
+
+/* metric btn toggles: allow switching focus */
+metricBtns.forEach(b=>{
+  b.addEventListener('click', ()=>{
+    metricBtns.forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderChart(b.dataset.metric);
+  });
+});
+
+/* keyboard shortcut to export (cmd/ctrl+e) */
+document.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='e'){ e.preventDefault(); exportBtn.click(); }
 });
 </script>
 </body>
