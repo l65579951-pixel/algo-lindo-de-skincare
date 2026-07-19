@@ -1,0 +1,714 @@
+import React, { useState } from 'react';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { TrendingUp, TrendingDown, Calendar, AlertCircle, Heart, Droplets } from 'lucide-react';
+
+// Types
+interface SkinEntry {
+  date: string;
+  generalState: number;
+  hydration: number;
+  sebumProduction: number;
+  sensitivity: number;
+  breakouts: boolean;
+  luminosity: number;
+  irritation: number;
+  texture: number;
+  eyeContour: number;
+  lips: number;
+  mood?: string;
+  sleepHours?: number;
+  waterIntake?: number;
+  temperature?: number;
+  sunscreen?: boolean;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  usageDays: number;
+  compatibility: number;
+  results: string[];
+  rating: number;
+  status: 'active' | 'inactive';
+}
+
+interface Correlation {
+  factor1: string;
+  factor2: string;
+  correlation: number;
+  description: string;
+}
+
+// Color Palette
+const COLORS = {
+  primary: '#8B4C6E', // Burgundy
+  secondary: '#F5E6DC', // Cream
+  accent: '#D4A5A5', // Dusty Rose
+  positive: '#A8D5BA',
+  negative: '#E8B4B8',
+  neutral: '#C4B5A0',
+};
+
+const colorScale = (value: number) => {
+  if (value >= 80) return COLORS.positive;
+  if (value >= 60) return COLORS.accent;
+  if (value >= 40) return COLORS.neutral;
+  return COLORS.negative;
+};
+
+// Skin Status Timeline Component
+export const SkinStatusTimeline: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        🩷 Skin Status Timeline
+      </h2>
+      
+      <div className="space-y-4 max-h-96 overflow-y-auto">
+        {entries.slice().reverse().map((entry, idx) => (
+          <div key={idx} className="flex gap-4 pb-4 border-b border-gray-100 last:border-b-0">
+            <div className="w-20 text-sm font-semibold text-gray-600">{entry.date}</div>
+            
+            <div className="flex-1 grid grid-cols-5 gap-3">
+              {[
+                { label: 'General', value: entry.generalState },
+                { label: 'Hydration', value: entry.hydration },
+                { label: 'Sebum', value: entry.sebumProduction },
+                { label: 'Sensitivity', value: entry.sensitivity },
+                { label: 'Luminosity', value: entry.luminosity },
+              ].map((item) => (
+                <div key={item.label} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                    style={{ backgroundColor: colorScale(item.value) }}
+                  >
+                    {Math.round(item.value / 10)}
+                  </div>
+                  <span className="text-xs text-gray-500">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {entry.breakouts && (
+              <div className="flex items-center gap-1 text-red-500 text-xs font-semibold">
+                <AlertCircle size={16} />
+                Breakouts
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Pattern Detection Component
+export const PatternDetection: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
+  const patterns = generatePatterns(entries);
+
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        🧪 Pattern Detection
+      </h2>
+
+      <div className="space-y-4">
+        {patterns.map((pattern, idx) => (
+          <div key={idx} className="flex gap-3 p-4 rounded-lg" style={{ backgroundColor: COLORS.secondary }}>
+            <TrendingUp size={20} style={{ color: COLORS.primary }} className="flex-shrink-0 mt-1" />
+            <p className="text-sm text-gray-700">{pattern}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Skin Analytics Component
+export const SkinAnalytics: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
+  const hydrationData = entries.map((entry) => ({
+    date: entry.date,
+    hydration: entry.hydration,
+  }));
+
+  const breakoutFrequency = calculateWeeklyBreakouts(entries);
+
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        📈 Skin Analytics
+      </h2>
+
+      <div className="space-y-8">
+        {/* Hydration Evolution */}
+        <div>
+          <h3 className="text-sm font-semibold mb-4 text-gray-700">Hydration Evolution</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={hydrationData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" style={{ fontSize: 12 }} />
+              <YAxis style={{ fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#FFF',
+                  border: `1px solid ${COLORS.accent}`,
+                  borderRadius: '8px',
+                }}
+              />
+              <Line type="monotone" dataKey="hydration" stroke={COLORS.accent} strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Breakout Frequency */}
+        <div>
+          <h3 className="text-sm font-semibold mb-4 text-gray-700">Breakout Frequency by Week</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={breakoutFrequency}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="week" style={{ fontSize: 12 }} />
+              <YAxis style={{ fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#FFF',
+                  border: `1px solid ${COLORS.negative}`,
+                  borderRadius: '8px',
+                }}
+              />
+              <Bar dataKey="count" fill={COLORS.negative} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Product Intelligence Component
+export const ProductIntelligence: React.FC<{ products: Product[] }> = ({ products }) => {
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        🧴 Product Intelligence
+      </h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {products.map((product) => (
+          <div key={product.id} className="p-4 rounded-lg border border-gray-100 hover:shadow-md transition">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="font-semibold text-gray-900">{product.name}</h3>
+              <div className="text-xs font-bold px-2 py-1 rounded" style={{ backgroundColor: COLORS.secondary, color: COLORS.primary }}>
+                {product.usageDays}d
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">Compatibility</span>
+                  <span className="font-semibold">{product.compatibility}%</span>
+                </div>
+                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full transition"
+                    style={{
+                      width: `${product.compatibility}%`,
+                      backgroundColor: colorScale(product.compatibility),
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Results Observed</p>
+                <ul className="space-y-1">
+                  {product.results.map((result, idx) => (
+                    <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+                      <span style={{ color: COLORS.positive }}>✔</span>
+                      {result}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <span key={i} style={{ color: i < product.rating ? '#FFD700' : '#E5E7EB' }}>
+                    ★
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Skin Correlation Engine Component
+export const SkinCorrelationEngine: React.FC<{ correlations: Correlation[] }> = ({ correlations }) => {
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        🧬 Skin Correlation Engine
+      </h2>
+
+      <div className="space-y-4">
+        {correlations.map((corr, idx) => (
+          <div key={idx} className="p-4 rounded-lg border border-gray-100">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-sm font-semibold text-gray-700">{corr.factor1}</span>
+              <span style={{ color: COLORS.accent }}>↔</span>
+              <span className="text-sm font-semibold text-gray-700">{corr.factor2}</span>
+              <div className="ml-auto">
+                <div className="text-xs font-bold px-2 py-1 rounded" style={{ backgroundColor: COLORS.secondary }}>
+                  {Math.round(corr.correlation * 100)}%
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 italic">{corr.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Evolution Gallery Component
+export const EvolutionGallery: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
+  const [startDate, setStartDate] = useState(entries[0]?.date || '');
+  const [endDate, setEndDate] = useState(entries[entries.length - 1]?.date || '');
+
+  const startEntry = entries.find((e) => e.date === startDate);
+  const endEntry = entries.find((e) => e.date === endDate);
+
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        📷 Evolution Gallery
+      </h2>
+
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div>
+          <label className="block text-sm font-semibold mb-2">Start Date</label>
+          <select
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+          >
+            {entries.map((e) => (
+              <option key={e.date} value={e.date}>
+                {e.date}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-2">End Date</label>
+          <select
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+          >
+            {entries.map((e) => (
+              <option key={e.date} value={e.date}>
+                {e.date}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {startEntry && endEntry && (
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-semibold mb-4 text-gray-900">{startEntry.date}</h3>
+            <ComparisonCard entry={startEntry} />
+          </div>
+          <div>
+            <h3 className="font-semibold mb-4 text-gray-900">{endEntry.date}</h3>
+            <ComparisonCard entry={endEntry} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Comparison Card for Evolution Gallery
+const ComparisonCard: React.FC<{ entry: SkinEntry }> = ({ entry }) => {
+  return (
+    <div className="space-y-3 p-4 rounded-lg border border-gray-100">
+      {[
+        { label: 'General State', value: entry.generalState },
+        { label: 'Hydration', value: entry.hydration },
+        { label: 'Sensitivity', value: entry.sensitivity },
+        { label: 'Luminosity', value: entry.luminosity },
+        { label: 'Texture', value: entry.texture },
+      ].map((item) => (
+        <div key={item.label}>
+          <div className="flex justify-between text-sm mb-1">
+            <span className="text-gray-700">{item.label}</span>
+            <span className="font-semibold">{item.value}%</span>
+          </div>
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full transition"
+              style={{
+                width: `${item.value}%`,
+                backgroundColor: colorScale(item.value),
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// Skin Report Component
+export const SkinReport: React.FC<{ entries: SkinEntry[] }> = ({ entries }) => {
+  const stats = calculateMonthlyStats(entries);
+
+  return (
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+      <h2 className="text-xl font-semibold mb-6 flex items-center gap-2" style={{ color: COLORS.primary }}>
+        🩺 Skin Report
+      </h2>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Hydration" value={`↑ ${stats.hydrationChange}%`} positive={stats.hydrationChange > 0} />
+        <StatCard label="Breakouts" value={`↓ ${Math.abs(stats.breakoutChange)}%`} positive={stats.breakoutChange < 0} />
+        <StatCard label="Sensitivity" value={`↓ ${Math.abs(stats.sensitivityChange)}%`} positive={stats.sensitivityChange < 0} />
+        <StatCard label="Consistency" value={`${stats.consistency}%`} positive={stats.consistency > 80} />
+      </div>
+
+      {/* Positive Factors */}
+      <div className="mb-8">
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <span style={{ color: COLORS.positive }}>✔</span>
+          Positive Factors
+        </h3>
+        <ul className="space-y-2">
+          {stats.positiveFactors.map((factor, idx) => (
+            <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+              <span style={{ color: COLORS.positive }}>•</span>
+              {factor}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Areas to Improve */}
+      <div className="mb-8">
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <AlertCircle size={18} style={{ color: COLORS.negative }} />
+          Areas to Improve
+        </h3>
+        <ul className="space-y-2">
+          {stats.improvementAreas.map((area, idx) => (
+            <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+              <span style={{ color: COLORS.negative }}>•</span>
+              {area}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Recommendation */}
+      <div className="p-4 rounded-lg" style={{ backgroundColor: COLORS.secondary }}>
+        <h3 className="font-semibold mb-2" style={{ color: COLORS.primary }}>
+          🎯 Intelligent Recommendation
+        </h3>
+        <p className="text-sm text-gray-700 leading-relaxed">{stats.recommendation}</p>
+      </div>
+    </div>
+  );
+};
+
+// Stat Card Component
+const StatCard: React.FC<{ label: string; value: string; positive: boolean }> = ({ label, value, positive }) => {
+  return (
+    <div className="p-4 rounded-lg border border-gray-100 text-center">
+      <p className="text-xs text-gray-600 mb-2">{label}</p>
+      <p className="text-lg font-bold flex items-center justify-center gap-1" style={{ color: positive ? COLORS.positive : COLORS.negative }}>
+        {positive && <TrendingUp size={18} />}
+        {!positive && <TrendingDown size={18} />}
+        {value}
+      </p>
+    </div>
+  );
+};
+
+// Helper Functions
+function generatePatterns(entries: SkinEntry[]): string[] {
+  const patterns: string[] = [];
+
+  // Pattern: Exfoliants and breakouts
+  const exfoliantBreakouts = entries.filter((e) => e.breakouts).length > entries.length * 0.3;
+  if (exfoliantBreakouts) {
+    patterns.push(
+      'During the last three weeks, breakouts appeared mainly 2-4 days after using chemical exfoliants.'
+    );
+  }
+
+  // Pattern: Sleep and hydration
+  const avgSleep = entries.reduce((sum, e) => sum + (e.sleepHours || 0), 0) / entries.length;
+  if (avgSleep > 7) {
+    patterns.push('Your skin shows better hydration levels when you sleep more than 7 hours per night.');
+  }
+
+  // Pattern: Temperature sensitivity
+  const highTempDays = entries.filter((e) => (e.temperature || 0) > 30);
+  if (highTempDays.length > 0) {
+    const avgSensitivity = highTempDays.reduce((sum, e) => sum + e.sensitivity, 0) / highTempDays.length;
+    patterns.push(`Sensitivity levels increase on days with temperatures above 30°C (average: ${Math.round(avgSensitivity)}%).`);
+  }
+
+  // Pattern: Water intake
+  const goodHydrationDays = entries.filter((e) => (e.waterIntake || 0) > 2);
+  if (goodHydrationDays.length > entries.length * 0.5) {
+    patterns.push('Increased water intake correlates with improved skin hydration.');
+  }
+
+  return patterns.length > 0 ? patterns : ['No significant patterns detected yet. Keep tracking!'];
+}
+
+function calculateWeeklyBreakouts(entries: SkinEntry[]): Array<{ week: string; count: number }> {
+  const weeks: { [key: string]: number } = {};
+
+  entries.forEach((entry) => {
+    const date = new Date(entry.date);
+    const week = `W${Math.ceil(date.getDate() / 7)}`;
+    weeks[week] = (weeks[week] || 0) + (entry.breakouts ? 1 : 0);
+  });
+
+  return Object.entries(weeks).map(([week, count]) => ({ week, count }));
+}
+
+function calculateMonthlyStats(entries: SkinEntry[]) {
+  const firstHalf = entries.slice(0, Math.floor(entries.length / 2));
+  const secondHalf = entries.slice(Math.floor(entries.length / 2));
+
+  const avgHydrationFirst = firstHalf.reduce((sum, e) => sum + e.hydration, 0) / firstHalf.length;
+  const avgHydrationSecond = secondHalf.reduce((sum, e) => sum + e.hydration, 0) / secondHalf.length;
+  const hydrationChange = Math.round(((avgHydrationSecond - avgHydrationFirst) / avgHydrationFirst) * 100);
+
+  const breakoutsFirst = firstHalf.filter((e) => e.breakouts).length;
+  const breakoutsSecond = secondHalf.filter((e) => e.breakouts).length;
+  const breakoutChange = Math.round(((breakoutsSecond - breakoutsFirst) / (breakoutsFirst || 1)) * 100);
+
+  const avgSensitivityFirst = firstHalf.reduce((sum, e) => sum + e.sensitivity, 0) / firstHalf.length;
+  const avgSensitivitySecond = secondHalf.reduce((sum, e) => sum + e.sensitivity, 0) / secondHalf.length;
+  const sensitivityChange = Math.round(((avgSensitivitySecond - avgSensitivityFirst) / avgSensitivityFirst) * 100);
+
+  const consistency = Math.round((entries.filter((e) => e.generalState > 60).length / entries.length) * 100);
+
+  return {
+    hydrationChange,
+    breakoutChange,
+    sensitivityChange,
+    consistency,
+    positiveFactors: [
+      'Better sleep quality observed',
+      'Increased water consumption',
+      'No significant irritations',
+      'Consistent routine adherence',
+    ],
+    improvementAreas: [
+      'Sunscreen omitted 4 days',
+      'Night routine incomplete 6 times',
+      'Low hydration during week 3',
+    ],
+    recommendation:
+      'Priority: strengthen skin barrier hydration. Although breakout frequency decreased this month, your skin showed dehydration signs in 40% of records. Maintain a gentle routine, prioritize repair actives, and avoid introducing new products until skin stabilizes.',
+  };
+}
+
+// Main Container Component
+export const SkinIntelligenceDashboard: React.FC = () => {
+  const [entries] = useState<SkinEntry[]>([
+    {
+      date: '2024-01-15',
+      generalState: 75,
+      hydration: 70,
+      sebumProduction: 45,
+      sensitivity: 50,
+      breakouts: false,
+      luminosity: 80,
+      irritation: 30,
+      texture: 65,
+      eyeContour: 75,
+      lips: 70,
+      mood: 'good',
+      sleepHours: 8,
+      waterIntake: 2.5,
+      temperature: 22,
+      sunscreen: true,
+    },
+    {
+      date: '2024-01-16',
+      generalState: 72,
+      hydration: 68,
+      sebumProduction: 50,
+      sensitivity: 55,
+      breakouts: false,
+      luminosity: 78,
+      irritation: 35,
+      texture: 62,
+      eyeContour: 72,
+      lips: 68,
+      mood: 'neutral',
+      sleepHours: 7,
+      waterIntake: 2,
+      temperature: 24,
+      sunscreen: true,
+    },
+    {
+      date: '2024-01-17',
+      generalState: 68,
+      hydration: 65,
+      sebumProduction: 55,
+      sensitivity: 65,
+      breakouts: true,
+      luminosity: 72,
+      irritation: 45,
+      texture: 55,
+      eyeContour: 65,
+      lips: 62,
+      mood: 'stressed',
+      sleepHours: 5,
+      waterIntake: 1.5,
+      temperature: 28,
+      sunscreen: false,
+    },
+    {
+      date: '2024-01-18',
+      generalState: 80,
+      hydration: 80,
+      sebumProduction: 40,
+      sensitivity: 40,
+      breakouts: false,
+      luminosity: 85,
+      irritation: 25,
+      texture: 75,
+      eyeContour: 80,
+      lips: 78,
+      mood: 'excellent',
+      sleepHours: 9,
+      waterIntake: 3,
+      temperature: 20,
+      sunscreen: true,
+    },
+  ]);
+
+  const [products] = useState<Product[]>([
+    {
+      id: '1',
+      name: 'Beauty of Joseon Glow Serum',
+      usageDays: 68,
+      compatibility: 96,
+      results: ['Greater luminosity', 'Texture reduction', 'No irritation'],
+      rating: 5,
+      status: 'active',
+    },
+    {
+      id: '2',
+      name: 'Ceramide Rich Cream',
+      usageDays: 45,
+      compatibility: 92,
+      results: ['Improved hydration', 'Barrier strengthening', 'Reduced sensitivity'],
+      rating: 5,
+      status: 'active',
+    },
+    {
+      id: '3',
+      name: 'Gentle Cleanser',
+      usageDays: 90,
+      compatibility: 88,
+      results: ['Effective cleansing', 'No dryness', 'Balanced pH'],
+      rating: 4,
+      status: 'active',
+    },
+    {
+      id: '4',
+      name: 'Niacinamide Essence',
+      usageDays: 30,
+      compatibility: 85,
+      results: ['Pore minimization', 'Sebum control', 'Improved texture'],
+      rating: 4,
+      status: 'active',
+    },
+  ]);
+
+  const [correlations] = useState<Correlation[]>([
+    {
+      factor1: 'Water intake',
+      factor2: 'Hydration',
+      correlation: 0.87,
+      description:
+        'High correlation between daily water consumption and skin hydration levels. Optimal intake: 2.5L+',
+    },
+    {
+      factor1: 'Sleep hours',
+      factor2: 'Breakouts',
+      correlation: -0.72,
+      description:
+        'Strong inverse correlation. Less than 6 hours of sleep increases breakout probability by 42%.',
+    },
+    {
+      factor1: 'Stress/Mood',
+      factor2: 'Irritation',
+      correlation: 0.65,
+      description:
+        'Moderate correlation between stress levels and facial irritation. Meditation helps reduce both.',
+    },
+    {
+      factor1: 'Temperature',
+      factor2: 'Oleosiness',
+      correlation: 0.78,
+      description: 'Higher temperatures increase sebum production. Critical threshold: 28°C.',
+    },
+  ]);
+
+  return (
+    <div className="min-h-screen p-6" style={{ backgroundColor: '#FAFAF8' }}>
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: COLORS.primary }}>
+            🧬 Skin Intelligence™
+          </h1>
+          <p className="text-gray-600 italic">
+            Tu piel cambia todos los días. Este widget se encarga de recordar el porqué.
+          </p>
+        </div>
+
+        {/* Timeline */}
+        <SkinStatusTimeline entries={entries} />
+
+        {/* Patterns */}
+        <PatternDetection entries={entries} />
+
+        {/* Analytics */}
+        <SkinAnalytics entries={entries} />
+
+        {/* Products */}
+        <ProductIntelligence products={products} />
+
+        {/* Correlations */}
+        <SkinCorrelationEngine correlations={correlations} />
+
+        {/* Evolution */}
+        <EvolutionGallery entries={entries} />
+
+        {/* Report */}
+        <SkinReport entries={entries} />
+      </div>
+    </div>
+  );
+};
+
+export default SkinIntelligenceDashboard;
